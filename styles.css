@@ -901,6 +901,17 @@ h1 {
   grid-column: 1 / -1;
 }
 
+.summary-prose {
+  margin-top: 12px;
+  border: 1px solid rgba(132, 94, 49, 0.24);
+  border-radius: 7px;
+  padding: 11px 12px;
+  background: rgba(255, 252, 242, 0.72);
+  color: var(--ink);
+  line-height: 1.78;
+  overflow-wrap: anywhere;
+}
+
 .summary-subblock + .summary-subblock {
   margin-top: 10px;
 }

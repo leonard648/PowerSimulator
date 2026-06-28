@@ -285,6 +285,130 @@
     }).join("") + '</div>';
   }
 
+  function cleanSummaryResultText(text) {
+    return String(text || "")
+      .replace(/\s*仕途结算：[^。]*。?/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function compactNameList(items, limit) {
+    var seen = {};
+    var names = (items || []).filter(function (item) {
+      if (!item || seen[item]) return false;
+      seen[item] = true;
+      return true;
+    });
+    var visible = names.slice(0, limit || 4);
+    return visible.join("、") + (names.length > visible.length ? "等" : "");
+  }
+
+  function summarizeTrackProse(trackSummary) {
+    var critical = trackSummary && trackSummary.critical || [];
+    var blocked = trackSummary && trackSummary.blocked || [];
+    var unresolved = trackSummary && trackSummary.unresolved || [];
+    var unsafe = critical.filter(function (track) { return !track.safe; }).map(function (track) { return track.name; });
+    var trouble = compactNameList(blocked.length ? blocked : unsafe);
+    var aftertaste = compactNameList(unresolved);
+
+    if (trouble && aftertaste) return "案面仍有" + trouble + "没有完全收住，" + aftertaste + "也会在后续回响。";
+    if (trouble) return "案面仍有" + trouble + "没有完全收住，后续行事需留一手。";
+    if (aftertaste) return "关键阻力大致被压住，但" + aftertaste + "仍会在后续回响。";
+    if (critical.length) return "几处关键阻力大致压住，案面暂可收口。";
+    return "案卷归档时，台面上没有留下显眼的关键阻力。";
+  }
+
+  function relationChangePhrase(label, delta) {
+    var parts = String(label || "").split("·");
+    var target = parts[0] || "旁人";
+    var metric = parts[1] || "";
+    if (metric === "亏欠") return delta > 0 ? "与" + target + "的人情债加深" : "欠" + target + "的人情账稍有抹平";
+    if (metric === "怨恨") return delta > 0 ? target + "旧怨加深" : target + "怨气稍缓";
+    if (metric === "亲近") return delta > 0 ? "与" + target + "更近了一步" : "与" + target + "略显疏离";
+    if (metric === "信任") return delta > 0 ? target + "信任更稳" : target + "信任转薄";
+    if (metric === "猜忌") return delta > 0 ? target + "猜忌加深" : target + "猜忌稍退";
+    if (metric === "畏惧") return delta > 0 ? target + "畏惧更重" : target + "畏惧稍减";
+    return label + (delta > 0 ? "有所抬升" : "有所回落");
+  }
+
+  function changePhrase(groupTitle, item) {
+    var label = item.label || "";
+    var delta = item.delta || 0;
+    if (item.text && label === "官职") return "官职转入" + (item.afterText || item.text.replace(/.*→\s*/, ""));
+    if (label === "官评") return delta > 0 ? "官评更稳" : "官评受挫";
+
+    if (groupTitle === "资源") {
+      if (label === "精力") return delta > 0 ? "精力得到回补" : "精力被耗去";
+      if (label === "银两") return delta > 0 ? "银两有所进项" : "银两有所支出";
+      if (label === "人情") return delta > 0 ? "人情有所回补" : "人情被动用";
+      if (label === "压力") return delta > 0 ? "压力加重" : "压力稍缓";
+    }
+
+    if (groupTitle === "名声") {
+      if (label === "清名") return delta > 0 ? "清名更显" : "清名受损";
+      if (label === "能名") return delta > 0 ? "能名更足" : "能名受挫";
+      if (label === "文名") return delta > 0 ? "文名更盛" : "文名暗淡";
+      if (label === "权名") return delta > 0 ? "权名更重" : "权名收敛";
+      if (label === "酷名") return delta > 0 ? "酷名更重" : "酷名稍退";
+      if (label === "贪名") return delta > 0 ? "贪名更露" : "贪名稍洗";
+    }
+
+    if (groupTitle === "朝局") {
+      if (label === "皇帝信任") return delta > 0 ? "上意稍近" : "上意转冷";
+      if (label === "士林评价") return delta > 0 ? "士林口碑转好" : "士林口碑转坏";
+      if (label === "民心") return delta > 0 ? "民心稍安" : "民心转低";
+      if (label === "财政健康") return delta > 0 ? "财政气色转稳" : "财政更吃紧";
+      if (label === "朋党烈度") return delta > 0 ? "朋党火势更旺" : "朋党火势稍退";
+      if (label === "朝局压力") return delta > 0 ? "朝局压力抬头" : "朝局压力回落";
+    }
+
+    if (groupTitle === "阵营关系") return relationChangePhrase(label, delta);
+    return label + (delta > 0 ? "有所抬升" : "有所回落");
+  }
+
+  function summarizeDeltaGroupsProse(groups) {
+    return (groups || []).map(function (group) {
+      var phrases = (group.items || []).map(function (item) {
+        return changePhrase(group.title, item);
+      }).filter(Boolean);
+      var limit = group.title === "阵营关系" ? 5 : 4;
+      var visible = phrases.slice(0, limit);
+      if (phrases.length > visible.length) visible.push("另有若干暗线也随之挪动");
+      return visible.length ? group.title + "上，" + visible.join("，") + "。" : "";
+    }).filter(Boolean);
+  }
+
+  function summarizeNpcBeatsProse(beats) {
+    if (!beats || !beats.length) return "";
+    var lines = beats.slice(0, 3).map(function (beat) { return beat.text; }).filter(Boolean);
+    if (beats.length > lines.length) lines.push("其余具名人物的亲疏恩怨也各自入账。");
+    return lines.join("");
+  }
+
+  function summarizeCardChangesProse(cardChanges, stainChanges) {
+    var lines = [];
+    var addedCards = (cardChanges || []).filter(function (item) { return (item.delta || 0) > 0; }).map(function (item) { return "《" + item.label + "》"; });
+    var removedCards = (cardChanges || []).filter(function (item) { return (item.delta || 0) < 0; }).map(function (item) { return "《" + item.label + "》"; });
+    var addedStains = (stainChanges || []).filter(function (item) { return (item.delta || 0) > 0; }).map(function (item) { return "《" + item.label + "》"; });
+    var removedStains = (stainChanges || []).filter(function (item) { return (item.delta || 0) < 0; }).map(function (item) { return "《" + item.label + "》"; });
+    if (addedCards.length) lines.push("牌库里添入" + compactNameList(addedCards));
+    if (removedCards.length) lines.push(compactNameList(removedCards) + "被裁汰出牌库");
+    if (addedStains.length) lines.push("旧痕方面，" + compactNameList(addedStains) + "入档");
+    if (removedStains.length) lines.push("旧痕方面，" + compactNameList(removedStains) + "被清去");
+    return lines.length ? lines.join("；") + "。" : "";
+  }
+
+  function buildSeasonSummaryProse(summary) {
+    var lines = [summarizeTrackProse(summary.trackSummary || {})];
+    lines = lines.concat(summarizeDeltaGroupsProse(summary.deltaGroups || []));
+    var npcText = summarizeNpcBeatsProse(summary.npcBeats || []);
+    if (npcText) lines.push(npcText);
+    var cardText = summarizeCardChangesProse(summary.cardChanges || [], summary.stainChanges || []);
+    if (cardText) lines.push(cardText);
+    lines = lines.filter(Boolean);
+    return lines.length ? lines.join("") : "本季案卷收束后，台面上没有立刻显出的数值波动或人情新账。";
+  }
+
   function renderRewardOptions(summary) {
     var options = summary.rewardOptions || [];
     if (!options.length) return "";
@@ -323,6 +447,8 @@
     ].join("|");
     summaryModalFor = summaryKey;
     var story = summary.story ? '<div class="story-box story-box--outcome"><b>余波</b>' + renderParagraphs(summary.story) + '</div>' : "";
+    var resultText = cleanSummaryResultText(summary.resultText || "");
+    var summaryProse = buildSeasonSummaryProse(summary);
     var rewardHtml = renderRewardOptions(summary);
     var officeDraftHtml = renderOfficePackageDraft();
     var needsReward = summary.rewardOptions && summary.rewardOptions.length && !summary.rewardChosen;
@@ -331,17 +457,11 @@
     showModal(
       '<div class="summary-panel summary--' + escapeHtml(summary.level || "partial") + '">' +
         '<div class="event-title-row"><h2>' + escapeHtml(summary.eventName) + '<span class="event-badge">本季总结</span></h2><div class="event-meta">结案：' + escapeHtml(summary.title || "") + '</div></div>' +
-        '<p class="event-desc">' + escapeHtml(summary.resultText || "") + '</p>' +
+        '<p class="event-desc">' + escapeHtml(resultText || "本季案卷已经归档。") + '</p>' +
         story +
-        '<div class="summary-grid">' +
-          '<section class="summary-section"><div class="panel-title">关键阻力与后患</div>' + renderTrackSummary(summary.trackSummary || {}) + '</section>' +
-          rewardHtml +
-          officeDraftHtml +
-          '<section class="summary-section summary-section--wide"><div class="panel-title">数值变动</div>' + renderDeltaGroups(summary.deltaGroups || []) + '</section>' +
-          '<section class="summary-section summary-section--wide"><div class="panel-title">NPC 人情账</div><div class="npc-ledger">' + renderNpcBeats(summary.npcBeats || []) + '</div></section>' +
-          '<section class="summary-section"><div class="panel-title">牌库变化</div>' + renderChangeList(summary.cardChanges || [], "本季没有牌库变化。") + '</section>' +
-          '<section class="summary-section"><div class="panel-title">污点与心病</div>' + renderChangeList(summary.stainChanges || [], "本季没有新增污点。") + '</section>' +
-        '</div>' +
+        '<p class="summary-prose">' + escapeHtml(summaryProse) + '</p>' +
+        rewardHtml +
+        officeDraftHtml +
         '<div class="modal-actions summary-actions"><button id="summary-continue" ' + (canContinue ? "" : "disabled") + '>' + (needsReward ? "先选择沉淀" : needsOfficePack ? "先选择官职包" : "进入下季") + '</button></div>' +
       '</div>'
     );
