@@ -383,7 +383,7 @@
           '<div class="tags">' + tags + '</div>' +
         '</div>' +
         '<div class="card-actions">' +
-          '<button data-card="' + card.instanceId + '" ' + (playable ? "" : "disabled") + '>' + (modes.length ? "选择用法" : "打出") + '</button>' +
+          '<button data-card="' + card.instanceId + '" ' + (playable ? "" : "disabled") + '>' + (modes.length ? "用法" : "打出") + '</button>' +
           '<button data-keep-card="' + card.instanceId + '" class="ghost-button" ' + (s.keptCard || locked ? "disabled" : "") + '>保留</button>' +
           '<button data-exchange-card="' + card.instanceId + '" class="ghost-button" ' + (locked ? "disabled" : "") + '>' + (isSelected ? "取消筹换" : "筹换") + '</button>' +
         '</div>' +
@@ -460,7 +460,7 @@
       var traits = (def.traits || []).slice(0, 3).map(function (trait) {
         return '<span class="tag">' + escapeHtml(trait) + '</span>';
       }).join("");
-      return '<div class="npc-card">' +
+      return '<div class="npc-card" role="button" tabindex="0" data-npc-id="' + escapeHtml(def.id) + '">' +
         '<div class="npc-head"><b>' + escapeHtml(def.name) + '</b><span>' + escapeHtml(def.role) + '</span></div>' +
         '<div class="npc-agenda">' + escapeHtml(def.agenda) + '</div>' +
         '<div class="npc-badges">' + badgeHtml + '</div>' +
@@ -479,6 +479,51 @@
       '<div class="section"><div class="panel-title">关系</div><div class="relation-list">' + relations + '</div></div>' +
       '<div class="section"><div class="panel-title">人物志</div><div class="npc-list">' + (npcHtml || '<p class="muted">暂无登场人物。</p>') + '</div></div>' +
       '<div class="section"><div class="panel-title">人脉</div><div class="world-list">' + contacts + '</div></div>';
+    bindNpcStoryButtons();
+  }
+
+  function npcStoryModal(id) {
+    var npc = Game.getNpcById ? Game.getNpcById(id) : null;
+    var def = npc ? npc.def : (GameData.npcs || []).find(function (item) { return item.id === id; });
+    var state = npc ? npc.state : {};
+    if (!def) return;
+    var traits = (def.traits || []).map(function (trait) {
+      return '<span class="tag">' + escapeHtml(trait) + '</span>';
+    }).join("");
+    var history = (state.history || []).slice(-6).reverse().map(function (entry) {
+      return '<div class="story-entry story-entry--npc"><b>' + escapeHtml(entry.time || "近事") + '</b><p>' + escapeHtml(entry.text || "") + '</p></div>';
+    }).join("");
+    var biography = String(def.bio || def.agenda || "此人尚无小传。").split(/\n+/).map(function (line) {
+      return '<p>' + escapeHtml(line) + '</p>';
+    }).join("");
+    showModal(
+      '<div class="npc-story-modal">' +
+        '<div class="npc-story-head">' +
+          '<div class="ink-portrait">' + escapeHtml(def.name.slice(0, 1)) + '</div>' +
+          '<div><h2>' + escapeHtml(def.name) + '</h2><p class="muted">' + escapeHtml(def.role) + ' · ' + escapeHtml(def.group) + '</p></div>' +
+        '</div>' +
+        '<div class="npc-biography">' + biography + '</div>' +
+        '<div class="npc-meters npc-story-meters"><span>羁 ' + (state.bond || 0) + '</span><span>信 ' + (state.trust || 0) + '</span><span>欠 ' + (state.debt || 0) + '</span><span>怨 ' + (state.resentment || 0) + '</span></div>' +
+        '<div class="tags">' + traits + '</div>' +
+        '<div class="section"><div class="panel-title">近事入传</div><div class="story-feed npc-story-feed">' + (history || '<p class="muted">尚无近事入传。</p>') + '</div></div>' +
+      '</div>'
+    );
+  }
+
+  function bindNpcStoryButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-npc-id]"), function (card) {
+      if (card.dataset.npcStoryBound === "1") return;
+      card.dataset.npcStoryBound = "1";
+      card.addEventListener("click", function () {
+        npcStoryModal(card.getAttribute("data-npc-id"));
+      });
+      card.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          npcStoryModal(card.getAttribute("data-npc-id"));
+        }
+      });
+    });
   }
 
   function renderLog() {
@@ -733,7 +778,7 @@
     }).slice(0, 3).map(function (def) {
       var npc = Game.getNpcById ? Game.getNpcById(def.id) : null;
       var state = npc ? npc.state : {};
-      return '<div class="detail-npc"><b>' + escapeHtml(def.name) + '</b><span>' + escapeHtml(def.role) + '</span><p>' + escapeHtml(def.agenda) + '</p><div class="npc-meters"><span>羁 ' + (state.bond || 0) + '</span><span>信 ' + (state.trust || 0) + '</span><span>欠 ' + (state.debt || 0) + '</span><span>怨 ' + (state.resentment || 0) + '</span></div></div>';
+      return '<div class="detail-npc" role="button" tabindex="0" data-npc-id="' + escapeHtml(def.id) + '"><b>' + escapeHtml(def.name) + '</b><span>' + escapeHtml(def.role) + '</span><p>' + escapeHtml(def.agenda) + '</p><div class="npc-meters"><span>羁 ' + (state.bond || 0) + '</span><span>信 ' + (state.trust || 0) + '</span><span>欠 ' + (state.debt || 0) + '</span><span>怨 ' + (state.resentment || 0) + '</span></div></div>';
     }).join("");
     el("relation-detail-panel").innerHTML =
       '<div class="relation-dossier relation-dossier--' + relationTone(rel) + '">' +
@@ -772,6 +817,7 @@
         renderRelationView();
       });
     });
+    bindNpcStoryButtons();
   }
 
   function currentEndingPreview() {

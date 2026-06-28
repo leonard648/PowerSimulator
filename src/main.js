@@ -2,7 +2,7 @@
   function boot(useSave) {
     var loaded = useSave ? Game.load() : null;
     Game.state = loaded || Game.createNewState();
-    if (!loaded || !Game.state.deck || Game.state.deck.length === 0 && Game.state.discard.length === 0) {
+    if (!loaded || !Game.state.deck || (Game.state.deck.length === 0 && Game.state.discard.length === 0)) {
       Game.buildStartingDeck();
       Game.addLog("新科进士入仕，授翰林清职。");
     }

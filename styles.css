@@ -369,10 +369,20 @@ h1 {
   border: 1px solid rgba(126, 91, 49, 0.38);
   border-radius: 7px;
   padding: 9px;
+  cursor: pointer;
   background:
     linear-gradient(135deg, rgba(255, 252, 242, 0.82), rgba(233, 217, 184, 0.58)),
     repeating-linear-gradient(90deg, rgba(95, 60, 32, 0.035) 0 1px, transparent 1px 8px);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16);
+}
+
+.npc-card:hover,
+.npc-card:focus-visible,
+.detail-npc:hover,
+.detail-npc:focus-visible {
+  outline: 2px solid rgba(165, 51, 42, 0.34);
+  outline-offset: 2px;
+  filter: brightness(1.03);
 }
 
 .npc-card::after {
@@ -1563,6 +1573,36 @@ textarea.export {
   border-radius: 7px;
   padding: 10px;
   background: rgba(255, 252, 242, 0.7);
+}
+
+.detail-npc {
+  cursor: pointer;
+}
+
+.npc-story-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.npc-story-head h2 {
+  color: var(--red-deep);
+}
+
+.npc-biography {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 12px;
+  line-height: 1.75;
+}
+
+.npc-story-meters {
+  margin: 12px 0;
+}
+
+.npc-story-feed {
+  max-height: 300px;
 }
 
 .relation-filter b,
