@@ -61,9 +61,20 @@
         "burn_private_letter"
       ]
     };
+    var starterByOffice = {
+      county: ["audit_accounts", "open_granary", "catch_bandits", "seal_grain", "village_covenant"],
+      censor: ["evidence_chain", "cross_examine", "imperial_mood", "humble_apology"]
+    };
+    var starters = starterByOffice[officeId] || [];
     (idsByOffice[officeId] || []).forEach(function (id) {
-      Game.state.discard.push(cloneCard(cardById(id)));
+      var card = cloneCard(cardById(id));
+      if (starters.indexOf(id) >= 0) {
+        Game.state.deck.push(card);
+      } else {
+        Game.state.discard.push(card);
+      }
     });
+    if (starters.length) Game.state.deck = shuffle(Game.state.deck);
   };
 
   Game.drawCards = function (count) {

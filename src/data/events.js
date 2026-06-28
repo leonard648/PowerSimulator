@@ -218,7 +218,7 @@
     "治安崩坏": { world: { publicMood: -1 }, fame: { competence: -1 }, text: "治安未定，能名受疑。" },
     "流程迟滞": { world: { courtPressure: 1 }, text: "流程迟滞，朝局压力上升。" },
     "朋党反扑": { world: { factionHeat: 1 }, relations: { rival: { resentment: 1 } }, text: "朋党反扑未止，政敌更紧。" },
-    "政敌反扑": { relations: { rival: { resentment: 2 } }, resources: { pressure: 1 }, text: "政敌抓住余波继续追咬。" },
+    "政敌反扑": { relations: { rival: { resentment: 1 } }, resources: { pressure: 1 }, text: "政敌抓住余波继续追咬。" },
     "期限逼近": { resources: { pressure: 1 }, text: "期限压力转为心头旧账。" },
     "文名不足": { fame: { literary: -1 }, text: "文名不足，馆阁评价走低。" },
     "文辞未备": { fame: { literary: -1 }, text: "文辞未备，才名受损。" },

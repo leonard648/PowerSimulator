@@ -90,6 +90,7 @@
       var office = Game.getOffice();
       if (!office.nextOfficeId || !office.promotionMerit || s.career.merit < office.promotionMerit) break;
       var next = Game.getOfficeById(office.nextOfficeId);
+      if (next.minYear && s.year < next.minYear) break;
       var text = "官评至 " + s.career.merit + "，由" + office.name + "升任" + next.name + "。";
       s.career.officeId = next.id;
       s.career.rankName = next.rankName || next.name;
@@ -1045,6 +1046,8 @@
     var s = Game.state;
     var emperor = s.relations.emperor || {};
     return event.fatalOnFail === "framed_execution" &&
+      s.year >= 10 &&
+      s.career.officeId === "censor" &&
       result.level === "fail" &&
       s.relations.rival.resentment >= 16 &&
       (s.world.emperorTrust <= 3 || emperor.suspicion >= 15);
