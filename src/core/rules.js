@@ -96,7 +96,9 @@
       s.career.rankName = next.rankName || next.name;
       if (s.career.unlockedOffices.indexOf(next.id) < 0) {
         s.career.unlockedOffices.push(next.id);
-        Game.addOfficeCards(next.id);
+        if (!Game.queueOfficeCardDraft || !Game.queueOfficeCardDraft(next.id)) {
+          Game.addOfficeCards(next.id);
+        }
       }
       recordCareer("promotion", text);
       Game.addLog(text + " 新的职责与牌池已经展开。");
@@ -572,6 +574,12 @@
     });
   }
 
+  function criticalSafeCount(event) {
+    return (event.criticalTracks || []).filter(function (track) {
+      return !event.tracks[track] || event.tracks[track].value <= CRITICAL_SAFE;
+    }).length;
+  }
+
   function blockedCriticalTracks(event) {
     return (event.criticalTracks || []).filter(function (track) {
       return event.tracks[track] && event.tracks[track].value > CRITICAL_SAFE;
@@ -590,8 +598,10 @@
     var max = maxTrackTotal(event);
     var safeCritical = criticalSafe(event);
     var almostCritical = criticalAlmostSafe(event);
+    var criticalCount = (event.criticalTracks || []).length;
+    var safeCount = criticalSafeCount(event);
     var success = safeCritical && total <= Math.max(7, Math.floor(max * 0.62));
-    var partial = !success && event.playCount > 0 && almostCritical && total <= Math.floor(max * 0.95);
+    var partial = !success && event.playCount > 0 && almostCritical && (safeCount > 0 || !criticalCount) && total <= Math.floor(max * 0.95);
     var blocked = blockedCriticalTracks(event);
     var level = success ? "success" : partial ? "partial" : "fail";
     return {
@@ -746,18 +756,58 @@
     return { id: "trim_deck", name: "裁汰冗牍", desc: "删去一张基础牌，牌库更干净。", effect: { removeOne: ["seal_document", "peer_letter", "family_support", "marriage_plea", "copy_classics", "medical_rest"] } };
   }
 
+  function cardName(id) {
+    var card = Game.cardById(id);
+    return card ? card.name : id;
+  }
+
+  function gapRewardOption(result) {
+    var gaps = (result.blocked || []).concat(result.unresolved || []).join("、");
+    var id = "case_precedent";
+    if (gaps.indexOf("证据不足") >= 0) id = "evidence_chain";
+    else if (gaps.indexOf("派系阻挠") >= 0 || gaps.indexOf("举荐不足") >= 0) id = "quiet_broker";
+    else if (gaps.indexOf("上意不明") >= 0) id = "watch_in_silence";
+    else if (gaps.indexOf("清议沸腾") >= 0 || gaps.indexOf("流言滋生") >= 0) id = "public_repute";
+    else if (gaps.indexOf("钱粮缺口") >= 0) id = "commercial_tax";
+    else if (gaps.indexOf("民怨积累") >= 0 || gaps.indexOf("灾情蔓延") >= 0) id = "people_register";
+    else if (gaps.indexOf("政敌反扑") >= 0 || gaps.indexOf("朋党反扑") >= 0) id = "turn_reaction";
+    if (!Game.cardById(id)) id = "case_precedent";
+    return {
+      id: "gap_card",
+      name: "补足短板",
+      desc: "针对未解阻力获得《" + cardName(id) + "》，下次遇到同类局面更有抓手。",
+      effect: { addCard: id }
+    };
+  }
+
+  function taintedRewardOption() {
+    var office = Game.getOffice().id;
+    var cardId = office === "county" ? "conceal_deficit_action" : office === "censor" ? "withhold_dossier" : "seek_inner_tip";
+    var stainId = office === "county" ? "conceal_deficit" : office === "censor" ? "withheld_file" : "inner_palace_contact";
+    return {
+      id: "tainted_card",
+      name: "险路强牌",
+      desc: "获得《" + cardName(cardId) + "》，同时留下《" + cardName(stainId) + "》。短期很强，身后账重。",
+      effect: { addCard: cardId, addStain: stainId, resources: { pressure: 1 } }
+    };
+  }
+
   function buildRewardOptions(result) {
     var draftId = pickDraftCard(result);
     var draftCard = Game.cardById(draftId);
-    var pressureRelief = result.success ? -2 : result.partial ? -1 : 0;
-    var options = [
-      { id: "draft_card", name: "纳入新法", desc: "获得《" + draftCard.name + "》，加入弃牌堆。", effect: { addCard: draftId } },
-      refineRewardOption(result)
-    ];
-
-    options.push(styleRewardOption(dominantStyle()));
-    if (pressureRelief) options[2].effect = mergeEffect(options[2].effect, { resources: { pressure: pressureRelief } });
-    return options;
+    var routeOption = {
+      id: "route_card",
+      name: "沉淀路线",
+      desc: "获得《" + (draftCard ? draftCard.name : draftId) + "》，顺着当前为官方法继续成型。",
+      effect: { addCard: draftId }
+    };
+    var gapOption = gapRewardOption(result);
+    var taintedOption = taintedRewardOption();
+    if (result.success && Game.state.resources.pressure > 0) {
+      routeOption.effect = mergeEffect(routeOption.effect, { resources: { pressure: -1 } });
+      gapOption.effect = mergeEffect(gapOption.effect, { resources: { pressure: -1 } });
+    }
+    return [routeOption, gapOption, taintedOption];
   }
 
   function applyRewardEffect(effect) {
@@ -775,6 +825,11 @@
     if (effect.addCard) {
       var added = Game.addCardToDiscard(effect.addCard);
       if (added) notes.push("新牌入库：《" + added.name + "》");
+    }
+    if (effect.addStain) {
+      Game.addNegativeCard(effect.addStain);
+      var stain = Game.cardById(effect.addStain);
+      notes.push("污点入库：《" + (stain ? stain.name : effect.addStain) + "》");
     }
     if (effect.removeOne) {
       var removedCard = Game.removeFirstCardByIds(effect.removeOne);
@@ -799,7 +854,11 @@
 
   function effectiveCost(card, modeId) {
     var mode = getMode(card, modeId);
-    return Object.assign({}, card.cost || {}, mode && mode.cost ? mode.cost : {});
+    var cost = Object.assign({}, card.cost || {}, mode && mode.cost ? mode.cost : {});
+    if ((Game.state.tagUse.圆滑 || 0) >= 5 && (cardHasAnyTag(card, ["圆滑", "人情"]) || card.type === "人情") && cost.favor > 0) {
+      cost.favor = Math.max(0, cost.favor - 1);
+    }
+    return cost;
   }
 
   function mergeEffect(base, extra) {
@@ -819,6 +878,87 @@
       }
     });
     return result;
+  }
+
+  function cardHasAnyTag(card, tags) {
+    var cardTags = card.tags || [];
+    return tags.some(function (tag) { return cardTags.indexOf(tag) >= 0; });
+  }
+
+  function bestTrackByNames(event, names) {
+    if (!event) return null;
+    var exact = names.map(function (name) {
+      return event.tracks[name] ? { name: name, value: event.tracks[name].value } : null;
+    }).filter(Boolean).sort(function (a, b) { return b.value - a.value; });
+    if (exact.length) return exact[0].name;
+    var critical = (event.criticalTracks || []).map(function (name) {
+      return event.tracks[name] ? { name: name, value: event.tracks[name].value } : null;
+    }).filter(Boolean).sort(function (a, b) { return b.value - a.value; });
+    return critical.length ? critical[0].name : null;
+  }
+
+  function applyMasteryTrack(event, trackName, amount, label, notes) {
+    if (!event || !trackName || !event.tracks[trackName]) return;
+    var before = event.tracks[trackName].value;
+    event.tracks[trackName].value = Game.Util.clamp(before + amount, 0, event.tracks[trackName].max + 5);
+    if (event.tracks[trackName].value !== before) {
+      notes.push(label + "：" + trackName + " " + (event.tracks[trackName].value - before));
+    }
+  }
+
+  function applyStyleMastery(card, notes) {
+    var s = Game.state;
+    var event = s.currentEvent;
+    if (!event) return;
+    if ((s.tagUse.清流 || 0) >= 6 && cardHasAnyTag(card, ["清流", "清议"])) {
+      applyMasteryTrack(event, bestTrackByNames(event, ["清议沸腾", "流言滋生", "文名不足"]), -1, "清流成势", notes);
+      s.relations.emperor.suspicion += 1;
+      notes.push("清名刺眼：皇帝猜忌 +1");
+    }
+    if ((s.tagUse.能吏 || 0) >= 6 && (cardHasAnyTag(card, ["能吏", "政务", "证据", "法度"]) || card.domain === "政务" || card.domain === "法度")) {
+      applyMasteryTrack(event, bestTrackByNames(event, []), -1, "成例熟手", notes);
+      s.resources.pressure += 1;
+      notes.push("案牍压身：压力 +1");
+    }
+    if ((s.tagUse.权谋 || 0) >= 5 && cardHasAnyTag(card, ["权谋"])) {
+      applyMasteryTrack(event, bestTrackByNames(event, ["政敌反扑", "朋党反扑", "派系阻挠", "上意不明"]), -1, "暗线成网", notes);
+      s.resources.pressure += 1;
+      notes.push("疑惧入心：压力 +1");
+    }
+    if ((s.tagUse.仁政 || 0) >= 5 && cardHasAnyTag(card, ["仁政"])) {
+      s.world.publicMood += 1;
+      s.world.fiscalHealth -= 1;
+      notes.push("民望转高：民心 +1；财政健康 -1");
+    }
+    if ((s.tagUse.圆滑 || 0) >= 5 && cardHasAnyTag(card, ["圆滑", "人情"]) && s.relations.rival.resentment > 0) {
+      s.relations.rival.resentment -= 1;
+      notes.push("留足台阶：政敌怨恨 -1");
+    }
+  }
+
+  function effectPreview(card, modeId) {
+    var event = Game.state.currentEvent;
+    var mode = getMode(card, modeId);
+    var effect = Game.Util.deepClone(mode ? (mode.effect || card.effect || {}) : (card.effect || {}));
+    (mode && mode.bonusIf || card.bonusIf || []).forEach(function (bonus) {
+      if (event && event.flags && event.flags[bonus.flag]) {
+        effect = mergeEffect(effect, bonus.effect || {});
+      }
+    });
+    var lines = [];
+    Object.keys(effect.tracks || {}).forEach(function (track) {
+      lines.push(track + " " + (effect.tracks[track] > 0 ? "+" : "") + effect.tracks[track]);
+    });
+    lines = lines
+      .concat(describeDeltas("", effect.resources || {}, mapResourceName))
+      .concat(describeDeltas("", effect.fame || {}, mapFameName))
+      .concat(describeDeltas("", effect.world || {}, mapWorldName));
+    Object.keys(effect.relations || {}).forEach(function (id) {
+      lines = lines.concat(describeDeltas(relationName(id) + "·", effect.relations[id], relationMetricName));
+    });
+    if (effect.addStain) lines.push("污点入库：《" + cardName(effect.addStain) + "》");
+    if (effect.addCard) lines.push("新牌：《" + cardName(effect.addCard) + "》");
+    return lines.slice(0, 7);
   }
 
   function applyTrackDeltas(card, effect, notes) {
@@ -870,6 +1010,7 @@
     Object.keys(effect.tags || {}).forEach(function (tag) {
       s.tagUse[tag] = (s.tagUse[tag] || 0) + effect.tags[tag];
     });
+    applyStyleMastery(card, notes);
 
     if (effect.addStain) {
       Game.addNegativeCard(effect.addStain);
@@ -896,6 +1037,7 @@
 
   function canPay(card, modeId) {
     var s = Game.state;
+    if (card.id === "medical_rest" && (s.resources.pressure || 0) <= 0) return false;
     if (card.modes && !modeId) {
       return card.modes.some(function (mode) { return canPay(card, mode.id); });
     }
@@ -1299,6 +1441,26 @@
   }
 
   function buildSeasonSummary(before, after, event, result, text, storyText, consequences, outcomeNotes, autoGrowth) {
+    var summary = {
+      eventName: event.name,
+      level: result.level,
+      title: result.title,
+      resultText: text,
+      story: storyText,
+      played: event.played.slice(),
+      trackSummary: buildTrackSummary(event, result),
+      autoGrowth: autoGrowth || [],
+      notes: outcomeNotes || [],
+      consequences: consequences || [],
+      baseline: before,
+      rewardOptions: result.success || result.partial ? buildRewardOptions(result) : [],
+      rewardChosen: null
+    };
+    refreshSummaryDiff(summary, before, after);
+    return summary;
+  }
+
+  function refreshSummaryDiff(summary, before, after) {
     var careerItems = [];
     pushDiff(careerItems, "官评", before.career.merit || 0, after.career.merit || 0);
     if (before.career.officeId !== after.career.officeId || before.career.rankName !== after.career.rankName) {
@@ -1317,23 +1479,11 @@
       { title: "阵营关系", items: diffRelations(before.relations, after.relations) },
       { title: "仕途", items: careerItems }
     ].filter(function (group) { return group.items.length; });
-
-    return {
-      eventName: event.name,
-      level: result.level,
-      title: result.title,
-      resultText: text,
-      story: storyText,
-      played: event.played.slice(),
-      trackSummary: buildTrackSummary(event, result),
-      deltaGroups: groups,
-      npcBeats: diffNpcs(before.npcs, after.npcs),
-      cardChanges: diffCards(before.cards, after.cards, false),
-      stainChanges: diffCards(before.stains, after.stains, true),
-      autoGrowth: autoGrowth || [],
-      notes: outcomeNotes || [],
-      consequences: consequences || []
-    };
+    summary.deltaGroups = groups;
+    summary.npcBeats = diffNpcs(before.npcs, after.npcs);
+    summary.cardChanges = diffCards(before.cards, after.cards, false);
+    summary.stainChanges = diffCards(before.stains, after.stains, true);
+    return summary;
   }
 
   function resolveCurrentEvent() {
@@ -1386,7 +1536,7 @@
       Game.boundState();
       return;
     }
-    var autoGrowth = applyAutoAftermath(result, outcomeNotes);
+    var autoGrowth = [];
     Game.maybeAddPressureCard();
     promoteIfReady();
     Game.boundState();
@@ -1443,12 +1593,99 @@
     Game.state.pendingReward = null;
     Game.state.pendingSummary = null;
     Game.state.hasDrawn = false;
+    Game.state.preparedThisSeason = false;
+    Game.state.prepDrawBonus = 0;
     armRelationCooldown(Game.state.currentEvent);
     armNpcCooldown(Game.state.currentEvent);
     pushStoryBeat("hook", Game.state.currentEvent.name, Game.state.currentEvent.story.hook);
   };
 
+  function takePreparedCard(predicate) {
+    var s = Game.state;
+    var zones = ["deck", "discard"];
+    for (var i = 0; i < zones.length; i += 1) {
+      var zone = zones[i];
+      var index = s[zone].findIndex(predicate);
+      if (index >= 0) return s[zone].splice(index, 1)[0];
+    }
+    return null;
+  }
+
+  function highestCriticalForPrepare(event) {
+    return (event.criticalTracks || []).map(function (name) {
+      return event.tracks[name] ? { name: name, value: event.tracks[name].value } : null;
+    }).filter(Boolean).sort(function (a, b) { return b.value - a.value; })[0];
+  }
+
+  Game.getPrepareOptions = function () {
+    var s = Game.state;
+    var locked = s.ended || s.pendingSummary || s.pendingReward || !s.currentEvent || s.hasDrawn || s.preparedThisSeason;
+    return [
+      { id: "contact", name: "托人探路", desc: "人情 -1，检索一张人情/关系牌。", disabled: locked || s.resources.favor < 1 },
+      { id: "evidence", name: "检旧档", desc: "银两 -1，检索一张法度/证据牌。", disabled: locked || s.resources.money < 1 },
+      { id: "pressure_draw", name: "连夜筹画", desc: "压力 +2，本季多抽 1 张。", disabled: locked },
+      { id: "focus", name: "先定要害", desc: "压低最高关键阻力 1 点。", disabled: locked }
+    ];
+  };
+
+  Game.prepareForSeason = function (action) {
+    var s = Game.state;
+    var event = s.currentEvent;
+    if (!event || s.pendingSummary || s.pendingReward || s.ended || s.hasDrawn || s.preparedThisSeason) return false;
+    var card = null;
+    if (action === "contact") {
+      if (s.resources.favor < 1) return false;
+      s.resources.favor -= 1;
+      card = takePreparedCard(function (item) {
+        return item.type === "人情" || item.type === "家族" || cardHasAnyTag(item, ["人情", "同年", "师门", "圆滑"]);
+      });
+      if (card) s.hand.push(card);
+      Game.addLog(card ? "准备：托人探路，调来《" + card.name + "》。" : "准备：托人探路，却没有合适人情牌可调。");
+    } else if (action === "evidence") {
+      if (s.resources.money < 1) return false;
+      s.resources.money -= 1;
+      card = takePreparedCard(function (item) {
+        return item.type === "法度" || cardHasAnyTag(item, ["证据", "法度"]);
+      });
+      if (card) s.hand.push(card);
+      Game.addLog(card ? "准备：检旧档，调来《" + card.name + "》。" : "准备：检旧档，却没有合适证据牌可调。");
+    } else if (action === "pressure_draw") {
+      s.resources.pressure += 2;
+      s.prepDrawBonus = (s.prepDrawBonus || 0) + 1;
+      Game.addLog("准备：连夜筹画，本季抽牌 +1，压力 +2。");
+    } else if (action === "focus") {
+      var target = highestCriticalForPrepare(event);
+      if (target && event.tracks[target.name]) {
+        event.tracks[target.name].value = Math.max(0, event.tracks[target.name].value - 1);
+        Game.addLog("准备：先定要害，" + target.name + " -1。");
+      } else {
+        Game.addLog("准备：先定要害，但本季没有明确关键阻力。");
+      }
+    } else {
+      return false;
+    }
+    s.preparedThisSeason = true;
+    Game.boundState();
+    refreshRelationWarnings();
+    return true;
+  };
+
   Game.getDominantStyle = dominantStyle;
+
+  Game.getStylePerks = function () {
+    var tagUse = Game.state.tagUse || {};
+    return [
+      { tag: "圆滑", threshold: 5, text: "人情/圆滑牌人情费用 -1，出牌时缓和政敌怨恨。" },
+      { tag: "清流", threshold: 6, text: "清流/清议牌额外压一处舆论阻力，但皇帝猜忌 +1。" },
+      { tag: "能吏", threshold: 6, text: "政务/法度牌额外压最高关键阻力，压力 +1。" },
+      { tag: "权谋", threshold: 5, text: "权谋牌额外处理反扑或上意，压力 +1。" },
+      { tag: "仁政", threshold: 5, text: "仁政牌民心 +1，但财政健康 -1。" }
+    ].map(function (perk) {
+      perk.value = tagUse[perk.tag] || 0;
+      perk.active = perk.value >= perk.threshold;
+      return perk;
+    });
+  };
 
   Game.getCareerProgress = function () {
     var s = Game.state;
@@ -1500,6 +1737,8 @@
   Game.getCardModeCost = effectiveCost;
 
   Game.getCardThreat = computeThreatGain;
+
+  Game.getCardModePreview = effectPreview;
 
   Game.getCardHints = function (card) {
     var hints = [];
@@ -1591,6 +1830,8 @@
   Game.continueAfterSummary = function () {
     var s = Game.state;
     if (!s.pendingSummary || s.ended) return false;
+    if (s.pendingSummary.rewardOptions && s.pendingSummary.rewardOptions.length && !s.pendingSummary.rewardChosen) return false;
+    if (s.pendingOfficeDraft) return false;
     var name = s.pendingSummary.eventName || "本季事务";
     s.pendingSummary = null;
     s.pendingReward = null;
@@ -1598,6 +1839,36 @@
     advanceTime();
     Game.boundState();
     refreshRelationWarnings();
+    return true;
+  };
+
+  Game.selectReward = function (index) {
+    var s = Game.state;
+    var summary = s.pendingSummary;
+    if (!summary || summary.rewardChosen || !summary.rewardOptions || !summary.rewardOptions[index]) return false;
+    var option = summary.rewardOptions[index];
+    var notes = applyRewardEffect(option.effect || {});
+    summary.rewardChosen = {
+      id: option.id,
+      name: option.name,
+      desc: option.desc,
+      notes: notes
+    };
+    summary.autoGrowth = (summary.autoGrowth || []).concat(["仕途沉淀：" + option.name + (notes.length ? "，" + notes.join("；") : "")]);
+    refreshSummaryDiff(summary, summary.baseline || snapshotSeasonState(), snapshotSeasonState());
+    Game.addLog("仕途沉淀：" + option.name + "。");
+    Game.boundState();
+    refreshRelationWarnings();
+    return true;
+  };
+
+  Game.selectOfficePackage = function (index) {
+    if (!Game.chooseOfficePackage || !Game.chooseOfficePackage(index)) return false;
+    var summary = Game.state.pendingSummary;
+    if (summary) {
+      refreshSummaryDiff(summary, summary.baseline || snapshotSeasonState(), snapshotSeasonState());
+    }
+    Game.boundState();
     return true;
   };
 

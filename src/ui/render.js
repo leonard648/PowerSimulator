@@ -57,8 +57,143 @@
     return '<div class="bar"><div class="bar-fill ' + (bad ? "bad" : warn ? "warn" : "") + '" style="width:' + percentage + '%"></div></div>';
   }
 
-  function statBlock(label, value, max, reverse) {
-    return '<div class="stat"><b>' + escapeHtml(label) + " " + value + '</b>' + bar(value, max || 20, reverse) + '</div>';
+  var helpCatalog = {
+    attribute: {
+      才学: { group: "属性", desc: "文章、经义、诏书和清议路线的个人底色。", impact: ["对应才学领域卡牌，如讲学、诗文、诏书。", "当前版本不直接按属性高低改判定，真正改变事件的是卡牌效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      政务: { group: "属性", desc: "案牍、流程、钱粮和地方治理的个人底色。", impact: ["对应政务领域卡牌，常处理流程迟滞、钱粮缺口、案卷迟滞。", "当前版本不直接按属性高低改判定，幕友等卡牌才会额外修正事件阻力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      权谋: { group: "属性", desc: "密折、把柄、反制和朝争路线的个人底色。", impact: ["对应权谋领域卡牌，常处理政敌反扑、朋党反扑、上意不明。", "当前版本不直接按属性高低改判定，权谋标签累计会解锁路线加成。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      口才: { group: "属性", desc: "转圜、陈情、廷辩和人情往来的个人底色。", impact: ["对应口才领域卡牌，常用于缓和派系、流言和追责。", "当前版本不直接按属性高低改判定，卡牌和模式选择决定实际效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      操守: { group: "属性", desc: "清名、拒贿、据实上报和仁政选择的个人底色。", impact: ["对应操守领域卡牌，常换取清名或压低贪墨诱因。", "当前版本不直接按属性高低改判定，相关卡牌会改变名声和关系。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      体魄: { group: "属性", desc: "熬夜办案、休养和压力管理的个人底色。", impact: ["对应体魄领域卡牌，常与压力、期限、心病相关。", "当前版本不直接按属性高低改判定，压力系统才会影响下季精力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 }
+    },
+    resource: {
+      energy: { group: "资源", title: "精力", desc: "本季出牌的主要行动点。", impact: ["支付大多数卡牌费用；不足时许多牌不能使用。", "每季按官职刷新，压力过高会压低下季精力。"], changedBy: ["新季刷新、弃两张手牌换精力、部分卡牌费用。"], max: 8 },
+      money: { group: "资源", title: "银两", desc: "用于钱粮、打点、工程和准备阶段查旧档。", impact: ["支付财政、工程、人情类卡牌费用。", "准备阶段“检旧档”需要银两 -1。"], changedBy: ["年末自然 +1、弃两张手牌换银两、卡牌效果和结算奖励。"], max: 12 },
+      favor: { group: "资源", title: "人情", desc: "可动用的人脉余量。", impact: ["支付人情牌、同年/师门/证人等费用。", "准备阶段“托人探路”需要人情 -1。"], changedBy: ["年末自然 +1、弃两张手牌换人情、关系牌和结算奖励。"], max: 12 },
+      pressure: { group: "资源", title: "压力", desc: "仕途和身体的负担。", impact: ["压力 >=8 时，结案后可能加入心病牌。", "压力 >=10/15 会分别让下季精力额外 -1。", "压力很高且清名较高时，可能走向退而著书的结局。"], changedBy: ["失败后患、冒险卡牌、连夜筹画、休养牌和部分沉淀奖励。"], max: 20, reverse: true }
+    },
+    fame: {
+      clean: { group: "名声", title: "清名", desc: "外界认为你是否清正自持。", impact: ["清名高且污点少，容易走向清节留名结局。", "清名会被拒贿、清议、仁政提高，也会被污点和交易损伤。"], changedBy: ["清流/仁政/操守牌、事件结算、污点牌、失败后患。"], max: 20 },
+      competence: { group: "名声", title: "能名", desc: "外界认为你是否能办成事。", impact: ["能名高且贪名不高，容易走向能臣干吏结局。", "成功结案通常会增加能名，治安、流程、钱粮失败会损伤能名。"], changedBy: ["政务/法度/财政牌、成功结案、事件后患。"], max: 20 },
+      literary: { group: "名声", title: "文名", desc: "馆阁文章、经义和诗文名望。", impact: ["影响生平评价和翰林阶段的叙事重心。", "文名不足、文辞未备等后患会压低它。"], changedBy: ["讲学、诗文、诏书类卡牌，相关事件后患。"], max: 20 },
+      power: { group: "名声", title: "权名", desc: "外界认为你是否有权势与门路。", impact: ["权名 >=8 后，每年会让朋党烈度更容易上升。", "权名很高且污点多，可能走向权倾后被清算的结局。"], changedBy: ["权谋、密折、弹劾、门生和反制类卡牌。"], max: 20 },
+      cruel: { group: "名声", title: "酷名", desc: "外界认为你是否苛急严酷。", impact: ["酷名 >=8 会导向酷吏干才结局。", "短期常能压案，长期会伤民心和史评。"], changedBy: ["严刑、推出胥吏、威势压服等选择。"], max: 20, reverse: true },
+      corruption: { group: "名声", title: "贪名", desc: "外界认为你是否染上财货和灰色交易。", impact: ["贪名高会污染清名路线。", "贪名 >=9 且皇帝信任仍高，可能走向贪名难洗但苟全的结局。"], changedBy: ["遮掩亏空、收受交易、污点牌和失败后患。"], max: 20, reverse: true }
+    },
+    world: {
+      emperorTrust: { group: "朝局", title: "皇帝信任", desc: "君前对你的可用与可信程度。", impact: ["过低会让朱批疑云、旧案死局等风险更近。", "较高可触发密旨试探等机会，也能支撑部分灰色结局。"], changedBy: ["近君、密折、据实上报、清议过火和事件结算。"], max: 20 },
+      scholarOpinion: { group: "朝局", title: "士林评价", desc: "书院、公论和清议圈对你的评价。", impact: ["高士林评价会给清议拥戴和党祸身后名的可能。", "过低会触发公论反噬，清名更容易受损。"], changedBy: ["讲学、联署、清流牌、密折暗线、流言后患。"], max: 20 },
+      publicMood: { group: "朝局", title: "民心", desc: "地方百姓对官府处置的感受。", impact: ["民心高且仁政路线足，可能走向救荒有功结局。", "民心低会让灾情、治安、催科类后患更刺眼。"], changedBy: ["赈济、水利、缓征、严刑、商税和灾情后患。"], max: 20 },
+      fiscalHealth: { group: "朝局", title: "财政健康", desc: "钱粮和库藏是否稳。", impact: ["财政健康低意味着钱粮后患更重，治理叙事更容易被亏空牵住。", "财政健康高能支撑能吏路线和地方治理。"], changedBy: ["清丈、商税、裁撤冗费、赈济、工程和亏空后患。"], max: 20 },
+      factionHeat: { group: "朝局", title: "朋党烈度", desc: "朝中派系互相借题发挥的热度。", impact: ["烈度高意味着派系阻挠、朋党反扑和政敌动作更危险。", "权名 >=8 时，年末会推高朋党烈度。"], changedBy: ["失败后患、权谋操作、延议冷处理、离间朋党。"], max: 20, reverse: true },
+      courtPressure: { group: "朝局", title: "朝局压力", desc: "中枢流程、追责和案牍堆积造成的总压力。", impact: ["成功结案会降低它，失败会抬高它。", "它代表朝廷层面的紧绷感，会在总结里进入朝局变化。"], changedBy: ["结案成败、流程迟滞、案卷迟滞、成例压案和严行考成。"], max: 20, reverse: true }
+    },
+    relation: {
+      trust: { group: "关系", title: "信任", desc: "对方相信你能办事、守约或可用。", impact: ["信任或亲近很高时会标记为助力。", "皇帝信任高可带来密旨机会；上司信任高更利于考成叙事。"], changedBy: ["相关人物牌、NPC 事件、成功或失败结算。"], max: 20 },
+      suspicion: { group: "关系", title: "猜忌", desc: "主要用于皇帝关系，表示君前疑心。", impact: ["猜忌高会触发朱批疑云。", "皇帝猜忌极高且政敌怨恨深时，旧案可能变成死局。"], changedBy: ["清议过火、御前失分、密折暗线、成功辩清。"], max: 20, reverse: true },
+      closeness: { group: "关系", title: "亲近", desc: "师门、同年、士林、地方等与你的距离。", impact: ["亲近高可成为助力，带来人情和事件机会。", "士林亲近高会推动清议拥戴。"], changedBy: ["拜访、转圜、交易、相助和 NPC 事件。"], max: 20 },
+      debt: { group: "关系", title: "亏欠", desc: "你欠下的人情账。", impact: ["亏欠高会标记为牵连。", "师门或同年亏欠高，会触发师门逼请一类事件。"], changedBy: ["请托、交易、受援、偿还恩义和结算。"], max: 20, reverse: true },
+      resentment: { group: "关系", title: "怨恨", desc: "对方记下的旧账和敌意。", impact: ["怨恨高会标记为危险，并触发关系事件。", "政敌怨恨极高会把旧案推向清算风险。"], changedBy: ["强硬处置、得罪地方/胥吏/政敌、失败后患和缓和类卡牌。"], max: 20, reverse: true },
+      fear: { group: "关系", title: "畏惧", desc: "对方因你的手段或把柄而不敢轻动。", impact: ["畏惧可暂时形成威慑，算作一种强关系。", "畏惧不是信任，常伴随酷名、权谋或后续怨恨。"], changedBy: ["查封、严刑、把柄、反制和成功压服。"], max: 20 }
+    }
+  };
+
+  function helpAttributes(kind, key, owner) {
+    if (!kind) return "";
+    var attrs = ' data-help-kind="' + escapeHtml(kind) + '" data-help-key="' + escapeHtml(key || "") + '"';
+    if (owner) attrs += ' data-help-owner="' + escapeHtml(owner) + '"';
+    return attrs;
+  }
+
+  function statBlock(label, value, max, reverse, helpKind, helpKey, helpOwner) {
+    var help = helpKind ? helpAttributes(helpKind, helpKey || label, helpOwner) : "";
+    return '<div class="stat' + (helpKind ? " stat--help" : "") + '"' + help + (helpKind ? ' role="button" tabindex="0"' : "") + '><b>' + escapeHtml(label) + " " + value + '</b>' + bar(value, max || 20, reverse) + '</div>';
+  }
+
+  function helpGroupName(kind) {
+    return ({ attribute: "属性", resource: "资源", fame: "名声", world: "朝局", relation: "关系" })[kind] || "说明";
+  }
+
+  function personById(id) {
+    return (GameData.people || []).find(function (person) { return person.id === id; }) || null;
+  }
+
+  function helpInfo(kind, key, owner) {
+    var info = helpCatalog[kind] && helpCatalog[kind][key];
+    if (!info) return null;
+    if (kind !== "relation" || !owner) return info;
+    var person = personById(owner);
+    return Object.assign({}, info, {
+      title: (person ? person.name : "关系") + " · " + info.title
+    });
+  }
+
+  function helpValue(kind, key, owner) {
+    var s = Game.state || {};
+    if (kind === "attribute") return s.attributes && s.attributes[key];
+    if (kind === "resource") return s.resources && s.resources[key];
+    if (kind === "fame") return s.fame && s.fame[key];
+    if (kind === "world") return s.world && s.world[key];
+    if (kind === "relation") return s.relations && s.relations[owner] && s.relations[owner][key];
+    return null;
+  }
+
+  function helpStatus(value, max, reverse) {
+    if (typeof value !== "number") return "";
+    var ratio = max ? value / max : 0;
+    if (reverse) {
+      if (ratio >= 0.72) return "当前偏高，已经接近明显风险。";
+      if (ratio >= 0.42) return "当前需要留意，继续上升会制造后患。";
+      return "当前较低，暂时可控。";
+    }
+    if (ratio >= 0.72) return "当前很强，可以成为路线优势。";
+    if (ratio >= 0.42) return "当前中等，可以继续经营。";
+    return "当前偏低，相关局面会比较吃力。";
+  }
+
+  function renderHelpList(title, lines) {
+    if (!lines || !lines.length) return "";
+    return '<div class="help-block"><h3>' + escapeHtml(title) + '</h3><ul>' + lines.map(function (line) {
+      return '<li>' + escapeHtml(line) + '</li>';
+    }).join("") + '</ul></div>';
+  }
+
+  function showStatHelp(kind, key, owner) {
+    var info = helpInfo(kind, key, owner);
+    if (!info) return;
+    var value = helpValue(kind, key, owner);
+    var max = info.max || (kind === "attribute" ? 10 : 20);
+    var valueHtml = typeof value === "number" ? '<div class="help-value"><span>当前值</span><b>' + escapeHtml(value) + '/' + escapeHtml(max) + '</b><em>' + escapeHtml(helpStatus(value, max, !!info.reverse)) + '</em></div>' : "";
+    showModal(
+      '<div class="help-panel">' +
+        '<div class="help-kicker">' + escapeHtml(info.group || helpGroupName(kind)) + '</div>' +
+        '<h2>' + escapeHtml(info.title || key) + '</h2>' +
+        '<p>' + escapeHtml(info.desc || "") + '</p>' +
+        valueHtml +
+        renderHelpList("影响内容", info.impact || []) +
+        renderHelpList("会被哪些内容影响", info.changedBy || []) +
+        '<div class="modal-actions"><button id="help-close">知道了</button></div>' +
+      '</div>'
+    );
+    var close = document.getElementById("help-close");
+    if (close) close.addEventListener("click", hideModal);
+  }
+
+  function bindHelpButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-help-kind]"), function (node) {
+      if (node.dataset.helpBound === "1") return;
+      node.dataset.helpBound = "1";
+      node.addEventListener("click", function (event) {
+        event.stopPropagation();
+        showStatHelp(node.getAttribute("data-help-kind"), node.getAttribute("data-help-key"), node.getAttribute("data-help-owner"));
+      });
+      node.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        event.stopPropagation();
+        showStatHelp(node.getAttribute("data-help-kind"), node.getAttribute("data-help-key"), node.getAttribute("data-help-owner"));
+      });
+    });
   }
 
   function signed(value) {
@@ -128,6 +263,35 @@
     }).join("") + '</div>';
   }
 
+  function renderRewardOptions(summary) {
+    var options = summary.rewardOptions || [];
+    if (!options.length) return "";
+    if (summary.rewardChosen) {
+      var notes = summary.rewardChosen.notes && summary.rewardChosen.notes.length ? '<span>' + escapeHtml(summary.rewardChosen.notes.join("；")) + '</span>' : "";
+      return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">仕途沉淀</div><div class="reward-picked"><b>' + escapeHtml(summary.rewardChosen.name) + '</b><p>' + escapeHtml(summary.rewardChosen.desc || "") + '</p>' + notes + '</div></section>';
+    }
+    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">仕途沉淀（三选一）</div><div class="reward-options">' +
+      options.map(function (option, index) {
+        return '<button class="reward-card" data-reward-index="' + index + '"><b>' + escapeHtml(option.name) + '</b><span>' + escapeHtml(option.desc || "") + '</span></button>';
+      }).join("") +
+      '</div></section>';
+  }
+
+  function renderOfficePackageDraft() {
+    var draft = Game.state.pendingOfficeDraft;
+    if (!draft || !draft.packages || !draft.packages.length) return "";
+    var office = Game.getOfficeById ? Game.getOfficeById(draft.officeId) : null;
+    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">升任' + escapeHtml(office ? office.name : "新职") + '：选择官职包</div><div class="reward-options">' +
+      draft.packages.map(function (pack, index) {
+        var cards = (pack.cards || []).map(function (id) {
+          var card = Game.cardById(id);
+          return card ? card.name : id;
+        }).join("、");
+        return '<button class="reward-card" data-office-pack-index="' + index + '"><b>' + escapeHtml(pack.name) + '</b><span>' + escapeHtml(pack.desc || "") + '</span><em>' + escapeHtml(cards) + '</em></button>';
+      }).join("") +
+      '</div></section>';
+  }
+
   function renderSeasonSummary(summary) {
     var summaryKey = [
       Game.state.year,
@@ -137,6 +301,11 @@
     ].join("|");
     summaryModalFor = summaryKey;
     var story = summary.story ? '<div class="story-box story-box--outcome"><b>余波</b><p>' + escapeHtml(summary.story) + '</p></div>' : "";
+    var rewardHtml = renderRewardOptions(summary);
+    var officeDraftHtml = renderOfficePackageDraft();
+    var needsReward = summary.rewardOptions && summary.rewardOptions.length && !summary.rewardChosen;
+    var needsOfficePack = !!Game.state.pendingOfficeDraft;
+    var canContinue = !needsReward && !needsOfficePack;
     showModal(
       '<div class="summary-panel summary--' + escapeHtml(summary.level || "partial") + '">' +
         '<div class="event-title-row"><h2>' + escapeHtml(summary.eventName) + '<span class="event-badge">本季总结</span></h2><div class="event-meta">结案：' + escapeHtml(summary.title || "") + '</div></div>' +
@@ -144,14 +313,30 @@
         story +
         '<div class="summary-grid">' +
           '<section class="summary-section"><div class="panel-title">关键阻力与后患</div>' + renderTrackSummary(summary.trackSummary || {}) + '</section>' +
+          rewardHtml +
+          officeDraftHtml +
           '<section class="summary-section summary-section--wide"><div class="panel-title">数值变动</div>' + renderDeltaGroups(summary.deltaGroups || []) + '</section>' +
           '<section class="summary-section summary-section--wide"><div class="panel-title">NPC 人情账</div><div class="npc-ledger">' + renderNpcBeats(summary.npcBeats || []) + '</div></section>' +
           '<section class="summary-section"><div class="panel-title">牌库变化</div>' + renderChangeList(summary.cardChanges || [], "本季没有牌库变化。") + '</section>' +
           '<section class="summary-section"><div class="panel-title">污点与心病</div>' + renderChangeList(summary.stainChanges || [], "本季没有新增污点。") + '</section>' +
         '</div>' +
-        '<div class="modal-actions summary-actions"><button id="summary-continue">进入下季</button></div>' +
+        '<div class="modal-actions summary-actions"><button id="summary-continue" ' + (canContinue ? "" : "disabled") + '>' + (needsReward ? "先选择沉淀" : needsOfficePack ? "先选择官职包" : "进入下季") + '</button></div>' +
       '</div>'
     );
+    Array.prototype.forEach.call(document.querySelectorAll("[data-reward-index]"), function (button) {
+      button.addEventListener("click", function () {
+        Game.selectReward(Number(button.getAttribute("data-reward-index")));
+        summaryModalFor = null;
+        Game.UI.render();
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-office-pack-index]"), function (button) {
+      button.addEventListener("click", function () {
+        Game.selectOfficePackage(Number(button.getAttribute("data-office-pack-index")));
+        summaryModalFor = null;
+        Game.UI.render();
+      });
+    });
     document.getElementById("summary-continue").addEventListener("click", function () {
       continueFromSummary();
     });
@@ -162,10 +347,9 @@
       hideModal();
       return false;
     }
-    Game.continueAfterSummary();
+    if (!Game.continueAfterSummary()) return false;
     summaryModalFor = null;
     el("modal").classList.add("hidden");
-    if (!Game.state.ended) Game.drawCards(Game.getOffice().handLimit);
     Game.UI.render();
     if (Game.state.ended) Game.UI.showEnding();
     return true;
@@ -239,32 +423,36 @@
     var s = Game.state;
     var office = Game.getOffice();
     var attrHtml = Object.keys(s.attributes).map(function (key) {
-      return statBlock(key, s.attributes[key], 10, false);
+      return statBlock(key, s.attributes[key], 10, false, "attribute", key);
     }).join("");
     var resHtml = [
-      statBlock("精力", s.resources.energy, 8, false),
-      statBlock("银两", s.resources.money, 12, false),
-      statBlock("人情", s.resources.favor, 12, false),
-      statBlock("压力", s.resources.pressure, 20, true)
+      statBlock("精力", s.resources.energy, 8, false, "resource", "energy"),
+      statBlock("银两", s.resources.money, 12, false, "resource", "money"),
+      statBlock("人情", s.resources.favor, 12, false, "resource", "favor"),
+      statBlock("压力", s.resources.pressure, 20, true, "resource", "pressure")
     ].join("");
     var fameHtml = [
-      statBlock("清名", s.fame.clean, 20, false),
-      statBlock("能名", s.fame.competence, 20, false),
-      statBlock("文名", s.fame.literary, 20, false),
-      statBlock("权名", s.fame.power, 20, false),
-      statBlock("酷名", s.fame.cruel, 20, true),
-      statBlock("贪名", s.fame.corruption, 20, true)
+      statBlock("清名", s.fame.clean, 20, false, "fame", "clean"),
+      statBlock("能名", s.fame.competence, 20, false, "fame", "competence"),
+      statBlock("文名", s.fame.literary, 20, false, "fame", "literary"),
+      statBlock("权名", s.fame.power, 20, false, "fame", "power"),
+      statBlock("酷名", s.fame.cruel, 20, true, "fame", "cruel"),
+      statBlock("贪名", s.fame.corruption, 20, true, "fame", "corruption")
     ].join("");
     var tags = s.traits.concat(office.tags).map(function (tag) {
       return '<span class="tag">' + escapeHtml(tag) + '</span>';
     }).join("");
     var style = Game.getDominantStyle ? Game.getDominantStyle() : { tag: "未定", value: 0 };
     var styleHtml = '<div class="style-ribbon"><b>主导流派</b><span>' + escapeHtml(style.tag) + " " + style.value + '</span></div>';
+    var perkHtml = Game.getStylePerks ? '<div class="style-perks">' + Game.getStylePerks().map(function (perk) {
+      return '<div class="style-perk ' + (perk.active ? "style-perk--active" : "") + '"><b>' + escapeHtml(perk.tag) + " " + escapeHtml(perk.value) + "/" + escapeHtml(perk.threshold) + '</b><span>' + escapeHtml(perk.text) + '</span></div>';
+    }).join("") + '</div>' : "";
 
     el("character-panel").innerHTML =
       '<div class="character-identity"><div class="character-portrait-slice" aria-hidden="true"></div><div><b>李燕之</b><span>籍贯：京兆府</span><span>性格：' + escapeHtml(s.traits.join("、")) + '</span><span>官职：' + escapeHtml(office.rankName || office.name) + '</span></div></div>' +
       '<div class="tags">' + tags + '</div>' +
       styleHtml +
+      perkHtml +
       '<div class="section"><div class="panel-title">属性</div><div class="stat-grid">' + attrHtml + '</div></div>' +
       '<div class="section"><div class="panel-title">资源</div><div class="resource-grid">' + resHtml + '</div></div>' +
       '<div class="section"><div class="panel-title">名声</div><div class="resource-grid">' + fameHtml + '</div></div>' +
@@ -346,6 +534,10 @@
     el("end-button").disabled = locked || !s.currentEvent;
     var selected = s.selectedForExchange || [];
     var exchangeReady = selected.length === 2;
+    var prepareOptions = Game.getPrepareOptions ? Game.getPrepareOptions() : [];
+    var prepareBar = (!s.hasDrawn && !locked && prepareOptions.length) ? '<div class="prepare-bar"><span>准备阶段</span>' + prepareOptions.map(function (option) {
+      return '<button data-prepare-action="' + escapeHtml(option.id) + '" class="ghost-button" ' + (option.disabled ? "disabled" : "") + '><b>' + escapeHtml(option.name) + '</b><small>' + escapeHtml(option.desc) + '</small></button>';
+    }).join("") + '</div>' : "";
     var exchangeBar = '<div class="exchange-bar">' +
       '<span>已选筹换：' + selected.length + '/2</span>' +
       '<button data-exchange-resource="energy" class="ghost-button" ' + (exchangeReady && !locked ? "" : "disabled") + '>换精力</button>' +
@@ -358,10 +550,20 @@
       var visual = cardVisual(card);
       var modes = Game.getCardModes ? Game.getCardModes(card) : [];
       var hints = Game.getCardHints ? Game.getCardHints(card) : [];
+      var preview = Game.getCardModePreview ? Game.getCardModePreview(card).slice(0, 4) : [];
+      if (!preview.length && modes.length && Game.getCardModePreview) {
+        preview = modes.slice(0, 2).map(function (mode) {
+          var modePreview = Game.getCardModePreview(card, mode.id).slice(0, 2).join("、");
+          return mode.name + (modePreview ? "：" + modePreview : "");
+        }).filter(Boolean);
+      }
       var isSelected = selected.indexOf(card.instanceId) >= 0;
       var tags = (card.tags || []).slice(0, 4).map(function (tag) {
         return '<span class="tag">' + escapeHtml(tag) + '</span>';
       }).join("");
+      var previewHtml = preview.length ? '<div class="card-effects">' + preview.map(function (item) {
+        return '<span>' + escapeHtml(item) + '</span>';
+      }).join("") + '</div>' : "";
       var hintHtml = hints.length ? '<div class="card-hints">' + hints.map(function (hint) {
         return '<span>' + escapeHtml(hint) + '</span>';
       }).join("") + '</div>' : "";
@@ -378,6 +580,7 @@
           '<span class="card-art-stamp"></span>' +
         '</div>' +
         '<p class="card-desc">' + escapeHtml(card.desc) + '</p>' +
+        previewHtml +
         hintHtml +
         '<div class="card-footer">' +
           '<div class="tags">' + tags + '</div>' +
@@ -389,7 +592,13 @@
         '</div>' +
         '</article>';
     }).join("");
-    el("hand-panel").innerHTML = exchangeBar + '<div class="cards">' + (html || '<p class="muted">手牌为空。点击抽牌开始处理本季事务。</p>') + '</div>';
+    el("hand-panel").innerHTML = prepareBar + exchangeBar + '<div class="cards">' + (html || '<p class="muted">手牌为空。点击抽牌开始处理本季事务。</p>') + '</div>';
+    Array.prototype.forEach.call(document.querySelectorAll("[data-prepare-action]"), function (button) {
+      button.addEventListener("click", function () {
+        Game.prepareForSeason(button.getAttribute("data-prepare-action"));
+        Game.UI.render();
+      });
+    });
     Array.prototype.forEach.call(document.querySelectorAll("[data-card]"), function (button) {
       button.addEventListener("click", function () {
         var instanceId = button.getAttribute("data-card");
@@ -425,12 +634,12 @@
   function renderWorld() {
     var s = Game.state;
     var worldHtml = [
-      statBlock("皇帝信任", s.world.emperorTrust, 20, false),
-      statBlock("士林评价", s.world.scholarOpinion, 20, false),
-      statBlock("民心", s.world.publicMood, 20, false),
-      statBlock("财政健康", s.world.fiscalHealth, 20, false),
-      statBlock("朋党烈度", s.world.factionHeat, 20, true),
-      statBlock("朝局压力", s.world.courtPressure, 20, true)
+      statBlock("皇帝信任", s.world.emperorTrust, 20, false, "world", "emperorTrust"),
+      statBlock("士林评价", s.world.scholarOpinion, 20, false, "world", "scholarOpinion"),
+      statBlock("民心", s.world.publicMood, 20, false, "world", "publicMood"),
+      statBlock("财政健康", s.world.fiscalHealth, 20, false, "world", "fiscalHealth"),
+      statBlock("朋党烈度", s.world.factionHeat, 20, true, "world", "factionHeat"),
+      statBlock("朝局压力", s.world.courtPressure, 20, true, "world", "courtPressure")
     ].join("");
     function relationPriority(person) {
       var rel = s.relations[person.id] || {};
@@ -445,13 +654,13 @@
       var rel = s.relations[person.id] || {};
       var bits = person.keys.map(function (key) {
         var name = { trust: "信任", suspicion: "猜忌", closeness: "亲近", debt: "亏欠", resentment: "怨恨", fear: "畏惧" }[key] || key;
-        return name + " " + (rel[key] || 0);
-      }).join(" / ");
+        return '<span class="relation-chip relation-chip--help"' + helpAttributes("relation", key, person.id) + '>' + escapeHtml(name) + " " + escapeHtml(rel[key] || 0) + '</span>';
+      }).join("");
       var badgeHtml = (Game.getRelationBadges ? Game.getRelationBadges(person.id) : []).map(function (label) {
         var cls = label === "清算" ? "relation-badge--purge" : label === "危险" ? "relation-badge--danger" : label === "牵连" ? "relation-badge--debt" : "relation-badge--good";
         return '<span class="relation-badge ' + cls + '">' + escapeHtml(label) + '</span>';
       }).join("");
-      return '<div class="relation"><div class="relation-head"><b>' + escapeHtml(person.name) + '</b><span class="muted">' + escapeHtml(person.label) + '</span></div>' + (badgeHtml ? '<div class="relation-badges">' + badgeHtml + '</div>' : '') + '<div>' + escapeHtml(bits) + '</div></div>';
+      return '<div class="relation"><div class="relation-head"><b>' + escapeHtml(person.name) + '</b><span class="muted">' + escapeHtml(person.label) + '</span></div>' + (badgeHtml ? '<div class="relation-badges">' + badgeHtml + '</div>' : '') + '<div class="relation-metric-row">' + bits + '</div></div>';
     }).join("");
     var visibleNpcs = Game.getVisibleNpcs ? Game.getVisibleNpcs() : [];
     var npcHtml = visibleNpcs.slice().sort(function (a, b) {
@@ -741,7 +950,8 @@
     });
     return keys.map(function (key) {
       var value = rel[key] || 0;
-      return '<div class="mini-meter"><span>' + escapeHtml(relationLabel(key)) + '</span><div><i style="width:' + pct(value, 20) + '%"></i></div><b>' + value + '</b></div>';
+      var focusAttrs = compact ? "" : ' role="button" tabindex="0"';
+      return '<div class="mini-meter mini-meter--help"' + helpAttributes("relation", key, person.id) + focusAttrs + '><span>' + escapeHtml(relationLabel(key)) + '</span><div><i style="width:' + pct(value, 20) + '%"></i></div><b>' + value + '</b></div>';
     }).join("");
   }
 
@@ -842,6 +1052,7 @@
         renderRelationView();
       });
     });
+    bindHelpButtons();
     bindNpcStoryButtons();
   }
 
@@ -970,6 +1181,7 @@
       renderRelationView();
       renderDeckView();
       renderLifeView();
+      bindHelpButtons();
     },
     showDeck: function () {
       this.setView("deck");
@@ -986,8 +1198,12 @@
           var active = Game.state.currentEvent && Game.state.currentEvent.flags && Game.state.currentEvent.flags[bonus.flag];
           return '<span class="mode-hint ' + (active ? "mode-hint--active" : "") + '">' + escapeHtml(active ? "可触发：" + (bonus.text || bonus.flag) : "连招：" + (bonus.text || bonus.flag)) + '</span>';
         }).join("");
+        var preview = Game.getCardModePreview ? Game.getCardModePreview(card, mode.id) : [];
+        var previewHtml = preview.length ? '<div class="mode-preview">' + preview.map(function (item) {
+          return '<span>' + escapeHtml(item) + '</span>';
+        }).join("") + '</div>' : "";
         return '<div class="mode-row">' +
-          '<div><b>' + escapeHtml(mode.name) + '</b><p>' + escapeHtml(mode.desc || "") + '</p><div class="mode-costs">' + renderCostChips(cost) + '<span class="mode-threat">威胁 +' + threat + '</span></div>' + hints + '</div>' +
+          '<div><b>' + escapeHtml(mode.name) + '</b><p>' + escapeHtml(mode.desc || "") + '</p><div class="mode-costs">' + renderCostChips(cost) + '<span class="mode-threat">威胁 +' + threat + '</span></div>' + previewHtml + hints + '</div>' +
           '<button data-mode-card="' + escapeHtml(instanceId) + '" data-mode-id="' + escapeHtml(mode.id) + '" ' + (canPay ? "" : "disabled") + '>使用</button>' +
         '</div>';
       }).join("");

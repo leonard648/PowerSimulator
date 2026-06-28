@@ -129,6 +129,8 @@
       career: createCareer(1),
       currentEvent: null,
       hasDrawn: false,
+      preparedThisSeason: false,
+      prepDrawBonus: 0,
       ended: false,
       resources: {
         energy: 4,
@@ -172,6 +174,7 @@
       selectedForExchange: [],
       pendingReward: null,
       pendingSummary: null,
+      pendingOfficeDraft: null,
       contacts: ["mentor", "peer_friend", "adviser"],
       policies: [],
       eventHistory: [],
@@ -217,6 +220,9 @@
         loaded.pendingReward = null;
       }
       loaded.storyBeats = loaded.storyBeats || [];
+      loaded.preparedThisSeason = !!loaded.preparedThisSeason;
+      loaded.prepDrawBonus = loaded.prepDrawBonus || 0;
+      loaded.pendingOfficeDraft = loaded.pendingOfficeDraft || null;
       loaded.career = normalizeCareer(loaded.career, loaded.year || 1);
       loaded.npcs = normalizeNpcs(loaded.npcs);
       loaded.relationEventCooldowns = loaded.relationEventCooldowns || {};
