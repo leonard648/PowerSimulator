@@ -901,6 +901,9 @@
     Array.prototype.forEach.call(document.querySelectorAll(".app-view"), function (view) {
       view.classList.toggle("hidden", view.id !== activeView + "-view");
     });
+    Array.prototype.forEach.call(["main", "relations", "deck", "life"], function (view) {
+      document.body.classList.toggle("view-" + view, view === activeView);
+    });
     Array.prototype.forEach.call(document.querySelectorAll(".view-tab"), function (button) {
       var active = button.getAttribute("data-view") === activeView;
       button.classList.toggle("is-active", active);
