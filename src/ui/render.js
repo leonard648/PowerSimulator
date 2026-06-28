@@ -47,13 +47,13 @@
 
   var deckFilters = [
     { id: "全部", label: "全部" },
+    { id: "政务", label: "政务" },
+    { id: "法度", label: "法度" },
     { id: "清流", label: "清流" },
     { id: "能吏", label: "能吏" },
     { id: "圆滑", label: "圆滑" },
     { id: "权谋", label: "权谋" },
-    { id: "仁政", label: "仁政" },
-    { id: "污点", label: "污点" },
-    { id: "心病", label: "心病" }
+    { id: "仁政", label: "仁政" }
   ];
 
   var relationPositions = {
@@ -81,41 +81,41 @@
 
   var helpCatalog = {
     attribute: {
-      才学: { group: "属性", desc: "文章、经义、诏书和清议路线的个人底色。", impact: ["对应才学领域卡牌，如讲学、诗文、诏书。", "当前版本不直接按属性高低改判定，真正改变事件的是卡牌效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
-      政务: { group: "属性", desc: "案牍、流程、钱粮和地方治理的个人底色。", impact: ["对应政务领域卡牌，常处理流程迟滞、钱粮缺口、案卷迟滞。", "当前版本不直接按属性高低改判定，幕友等卡牌才会额外修正事件阻力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
-      权谋: { group: "属性", desc: "密折、把柄、反制和朝争路线的个人底色。", impact: ["对应权谋领域卡牌，常处理政敌反扑、朋党反扑、上意不明。", "当前版本不直接按属性高低改判定，权谋标签累计会解锁路线加成。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
-      口才: { group: "属性", desc: "转圜、陈情、廷辩和人情往来的个人底色。", impact: ["对应口才领域卡牌，常用于缓和派系、流言和追责。", "当前版本不直接按属性高低改判定，卡牌和模式选择决定实际效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
-      操守: { group: "属性", desc: "清名、拒贿、据实上报和仁政选择的个人底色。", impact: ["对应操守领域卡牌，常换取清名或压低贪墨诱因。", "当前版本不直接按属性高低改判定，相关卡牌会改变名声和关系。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
-      体魄: { group: "属性", desc: "熬夜办案、休养和压力管理的个人底色。", impact: ["对应体魄领域卡牌，常与压力、期限、心病相关。", "当前版本不直接按属性高低改判定，压力系统才会影响下季精力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 }
+      才学: { group: "属性", desc: "文章、经义、诏书和清议路线的个人底色。", impact: ["对应才学领域处置，如讲学、润色诏书、借清议立论。", "当前版本不直接按属性高低改判定，真正改变事务的是处置效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      政务: { group: "属性", desc: "案牍、流程、钱粮和地方治理的个人底色。", impact: ["对应政务领域处置，常处理流程迟滞、钱粮缺口、案卷迟滞。", "当前版本不直接按属性高低改判定，幕友等手段才会额外修正事件阻力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      权谋: { group: "属性", desc: "密折、把柄、反制和朝争路线的个人底色。", impact: ["对应权谋处置，常处理政敌反扑、朋党反扑、上意不明。", "当前版本不直接按属性高低改判定，权谋标签累计会解锁路线加成。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      口才: { group: "属性", desc: "转圜、陈情、廷辩和人情往来的个人底色。", impact: ["对应口才处置，常用于缓和派系、流言和追责。", "当前版本不直接按属性高低改判定，事务选项决定实际效果。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      操守: { group: "属性", desc: "清名、拒贿、据实上报和仁政选择的个人底色。", impact: ["对应操守处置，常换取清名或压低贪墨诱因。", "当前版本不直接按属性高低改判定，相关处置会改变名声和关系。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 },
+      体魄: { group: "属性", desc: "熬夜办案、休养和压力管理的个人底色。", impact: ["对应体魄处置，常与压力、期限、心病相关。", "当前版本不直接按属性高低改判定，压力系统才会影响下季精力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 }
     },
     resource: {
-      energy: { group: "资源", title: "精力", desc: "本季出牌的主要行动点。", impact: ["支付大多数卡牌费用；不足时许多牌不能使用。", "每季按官职刷新，压力过高会压低下季精力。"], changedBy: ["新季刷新、弃两张手牌换精力、部分卡牌费用。"], max: 8 },
-      money: { group: "资源", title: "银两", desc: "用于钱粮、打点、工程和准备阶段查旧档。", impact: ["支付财政、工程、人情类卡牌费用。", "准备阶段“检旧档”需要银两 -1。"], changedBy: ["年末自然 +1、弃两张手牌换银两、卡牌效果和结算奖励。"], max: 12 },
-      favor: { group: "资源", title: "人情", desc: "可动用的人脉余量。", impact: ["支付人情牌、同年/师门/证人等费用。", "准备阶段“托人探路”需要人情 -1。"], changedBy: ["年末自然 +1、弃两张手牌换人情、关系牌和结算奖励。"], max: 12 },
-      pressure: { group: "资源", title: "压力", desc: "仕途和身体的负担。", impact: ["压力 >=8 时，结案后可能加入心病牌。", "压力 >=10/15 会分别让下季精力额外 -1。", "压力很高且清名较高时，可能走向退而著书的结局。"], changedBy: ["失败后患、冒险卡牌、连夜筹画、休养牌和部分沉淀奖励。"], max: 20, reverse: true }
+      energy: { group: "资源", title: "精力", desc: "本季处置事务的主要行动点。", impact: ["支付大多数处置费用；不足时许多选项不能使用。", "每季按官职刷新，压力过高会压低下季精力。"], changedBy: ["新季刷新、事务处置和结算奖励。"], max: 8 },
+      money: { group: "资源", title: "银两", desc: "用于钱粮、打点、工程和查旧档。", impact: ["支付财政、工程、人情类处置费用。", "部分铺垫和暗线处置需要银两。"], changedBy: ["年末自然 +1、事务处置和结算奖励。"], max: 12 },
+      favor: { group: "资源", title: "人情", desc: "可动用的人脉余量。", impact: ["支付人情、同年、师门、证人等处置费用。", "圆滑路线成熟后可降低部分人情费用。"], changedBy: ["年末自然 +1、关系处置和结算奖励。"], max: 12 },
+      pressure: { group: "资源", title: "压力", desc: "仕途和身体的负担。", impact: ["压力 >=8 时，结案后可能留下心病。", "压力 >=10/15 会分别让下季精力额外 -1。", "压力很高且清名较高时，可能走向退而著书的结局。"], changedBy: ["失败后患、冒险处置、连夜筹画、休养和部分沉淀奖励。"], max: 20, reverse: true }
     },
     fame: {
-      clean: { group: "名声", title: "清名", desc: "外界认为你是否清正自持。", impact: ["清名高且污点少，容易走向清节留名结局。", "清名会被拒贿、清议、仁政提高，也会被污点和交易损伤。"], changedBy: ["清流/仁政/操守牌、事件结算、污点牌、失败后患。"], max: 20 },
-      competence: { group: "名声", title: "能名", desc: "外界认为你是否能办成事。", impact: ["能名高且贪名不高，容易走向能臣干吏结局。", "成功结案通常会增加能名，治安、流程、钱粮失败会损伤能名。"], changedBy: ["政务/法度/财政牌、成功结案、事件后患。"], max: 20 },
-      literary: { group: "名声", title: "文名", desc: "馆阁文章、经义和诗文名望。", impact: ["影响生平评价和翰林阶段的叙事重心。", "文名不足、文辞未备等后患会压低它。"], changedBy: ["讲学、诗文、诏书类卡牌，相关事件后患。"], max: 20 },
-      power: { group: "名声", title: "权名", desc: "外界认为你是否有权势与门路。", impact: ["权名 >=8 后，每年会让朋党烈度更容易上升。", "权名很高且污点多，可能走向权倾后被清算的结局。"], changedBy: ["权谋、密折、弹劾、门生和反制类卡牌。"], max: 20 },
+      clean: { group: "名声", title: "清名", desc: "外界认为你是否清正自持。", impact: ["清名高且污点少，容易走向清节留名结局。", "清名会被拒贿、清议、仁政提高，也会被污点和交易损伤。"], changedBy: ["清流/仁政/操守处置、事务结算、污点和失败后患。"], max: 20 },
+      competence: { group: "名声", title: "能名", desc: "外界认为你是否能办成事。", impact: ["能名高且贪名不高，容易走向能臣干吏结局。", "成功结案通常会增加能名，治安、流程、钱粮失败会损伤能名。"], changedBy: ["政务/法度/财政处置、成功结案、事件后患。"], max: 20 },
+      literary: { group: "名声", title: "文名", desc: "馆阁文章、经义和诗文名望。", impact: ["影响生平评价和翰林阶段的叙事重心。", "文名不足、文辞未备等后患会压低它。"], changedBy: ["讲学、诗文、诏书类处置，相关事件后患。"], max: 20 },
+      power: { group: "名声", title: "权名", desc: "外界认为你是否有权势与门路。", impact: ["权名 >=8 后，每年会让朋党烈度更容易上升。", "权名很高且污点多，可能走向权倾后被清算的结局。"], changedBy: ["权谋、密折、弹劾、门生和反制类处置。"], max: 20 },
       cruel: { group: "名声", title: "酷名", desc: "外界认为你是否苛急严酷。", impact: ["酷名 >=8 会导向酷吏干才结局。", "短期常能压案，长期会伤民心和史评。"], changedBy: ["严刑、推出胥吏、威势压服等选择。"], max: 20, reverse: true },
-      corruption: { group: "名声", title: "贪名", desc: "外界认为你是否染上财货和灰色交易。", impact: ["贪名高会污染清名路线。", "贪名 >=9 且皇帝信任仍高，可能走向贪名难洗但苟全的结局。"], changedBy: ["遮掩亏空、收受交易、污点牌和失败后患。"], max: 20, reverse: true }
+      corruption: { group: "名声", title: "贪名", desc: "外界认为你是否染上财货和灰色交易。", impact: ["贪名高会污染清名路线。", "贪名 >=9 且皇帝信任仍高，可能走向贪名难洗但苟全的结局。"], changedBy: ["遮掩亏空、收受交易、污点和失败后患。"], max: 20, reverse: true }
     },
     world: {
       emperorTrust: { group: "朝局", title: "皇帝信任", desc: "君前对你的可用与可信程度。", impact: ["过低会让朱批疑云、旧案死局等风险更近。", "较高可触发密旨试探等机会，也能支撑部分灰色结局。"], changedBy: ["近君、密折、据实上报、清议过火和事件结算。"], max: 20 },
-      scholarOpinion: { group: "朝局", title: "士林评价", desc: "书院、公论和清议圈对你的评价。", impact: ["高士林评价会给清议拥戴和党祸身后名的可能。", "过低会触发公论反噬，清名更容易受损。"], changedBy: ["讲学、联署、清流牌、密折暗线、流言后患。"], max: 20 },
+      scholarOpinion: { group: "朝局", title: "士林评价", desc: "书院、公论和清议圈对你的评价。", impact: ["高士林评价会给清议拥戴和党祸身后名的可能。", "过低会触发公论反噬，清名更容易受损。"], changedBy: ["讲学、联署、清流处置、密折暗线、流言后患。"], max: 20 },
       publicMood: { group: "朝局", title: "民心", desc: "地方百姓对官府处置的感受。", impact: ["民心高且仁政路线足，可能走向救荒有功结局。", "民心低会让灾情、治安、催科类后患更刺眼。"], changedBy: ["赈济、水利、缓征、严刑、商税和灾情后患。"], max: 20 },
       fiscalHealth: { group: "朝局", title: "财政健康", desc: "钱粮和库藏是否稳。", impact: ["财政健康低意味着钱粮后患更重，治理叙事更容易被亏空牵住。", "财政健康高能支撑能吏路线和地方治理。"], changedBy: ["清丈、商税、裁撤冗费、赈济、工程和亏空后患。"], max: 20 },
       factionHeat: { group: "朝局", title: "朋党烈度", desc: "朝中派系互相借题发挥的热度。", impact: ["烈度高意味着派系阻挠、朋党反扑和政敌动作更危险。", "权名 >=8 时，年末会推高朋党烈度。"], changedBy: ["失败后患、权谋操作、延议冷处理、离间朋党。"], max: 20, reverse: true },
       courtPressure: { group: "朝局", title: "朝局压力", desc: "中枢流程、追责和案牍堆积造成的总压力。", impact: ["成功结案会降低它，失败会抬高它。", "它代表朝廷层面的紧绷感，会在总结里进入朝局变化。"], changedBy: ["结案成败、流程迟滞、案卷迟滞、成例压案和严行考成。"], max: 20, reverse: true }
     },
     relation: {
-      trust: { group: "关系", title: "信任", desc: "对方相信你能办事、守约或可用。", impact: ["信任或亲近很高时会标记为助力。", "皇帝信任高可带来密旨机会；上司信任高更利于考成叙事。"], changedBy: ["相关人物牌、NPC 事件、成功或失败结算。"], max: 20 },
+      trust: { group: "关系", title: "信任", desc: "对方相信你能办事、守约或可用。", impact: ["信任或亲近很高时会标记为助力。", "皇帝信任高可带来密旨机会；上司信任高更利于考成叙事。"], changedBy: ["相关人物处置、NPC 事件、成功或失败结算。"], max: 20 },
       suspicion: { group: "关系", title: "猜忌", desc: "主要用于皇帝关系，表示君前疑心。", impact: ["猜忌高会触发朱批疑云。", "皇帝猜忌极高且政敌怨恨深时，旧案可能变成死局。"], changedBy: ["清议过火、御前失分、密折暗线、成功辩清。"], max: 20, reverse: true },
       closeness: { group: "关系", title: "亲近", desc: "师门、同年、士林、地方等与你的距离。", impact: ["亲近高可成为助力，带来人情和事件机会。", "士林亲近高会推动清议拥戴。"], changedBy: ["拜访、转圜、交易、相助和 NPC 事件。"], max: 20 },
       debt: { group: "关系", title: "亏欠", desc: "你欠下的人情账。", impact: ["亏欠高会标记为牵连。", "师门或同年亏欠高，会触发师门逼请一类事件。"], changedBy: ["请托、交易、受援、偿还恩义和结算。"], max: 20, reverse: true },
-      resentment: { group: "关系", title: "怨恨", desc: "对方记下的旧账和敌意。", impact: ["怨恨高会标记为危险，并触发关系事件。", "政敌怨恨极高会把旧案推向清算风险。"], changedBy: ["强硬处置、得罪地方/胥吏/政敌、失败后患和缓和类卡牌。"], max: 20, reverse: true },
+      resentment: { group: "关系", title: "怨恨", desc: "对方记下的旧账和敌意。", impact: ["怨恨高会标记为危险，并触发关系事件。", "政敌怨恨极高会把旧案推向清算风险。"], changedBy: ["强硬处置、得罪地方/胥吏/政敌、失败后患和缓和类处置。"], max: 20, reverse: true },
       fear: { group: "关系", title: "畏惧", desc: "对方因你的手段或把柄而不敢轻动。", impact: ["畏惧可暂时形成威慑，算作一种强关系。", "畏惧不是信任，常伴随酷名、权谋或后续怨恨。"], changedBy: ["查封、严刑、把柄、反制和成功压服。"], max: 20 }
     }
   };
@@ -391,8 +391,8 @@
     var removedCards = (cardChanges || []).filter(function (item) { return (item.delta || 0) < 0; }).map(function (item) { return "《" + item.label + "》"; });
     var addedStains = (stainChanges || []).filter(function (item) { return (item.delta || 0) > 0; }).map(function (item) { return "《" + item.label + "》"; });
     var removedStains = (stainChanges || []).filter(function (item) { return (item.delta || 0) < 0; }).map(function (item) { return "《" + item.label + "》"; });
-    if (addedCards.length) lines.push("牌库里添入" + compactNameList(addedCards));
-    if (removedCards.length) lines.push(compactNameList(removedCards) + "被裁汰出牌库");
+    if (addedCards.length) lines.push("手段库里沉淀出" + compactNameList(addedCards));
+    if (removedCards.length) lines.push(compactNameList(removedCards) + "被裁汰出手段库");
     if (addedStains.length) lines.push("旧痕方面，" + compactNameList(addedStains) + "入档");
     if (removedStains.length) lines.push("旧痕方面，" + compactNameList(removedStains) + "被清去");
     return lines.length ? lines.join("；") + "。" : "";
@@ -427,13 +427,13 @@
     var draft = Game.state.pendingOfficeDraft;
     if (!draft || !draft.packages || !draft.packages.length) return "";
     var office = Game.getOfficeById ? Game.getOfficeById(draft.officeId) : null;
-    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">升任' + escapeHtml(office ? office.name : "新职") + '：选择官职包</div><div class="reward-options">' +
+    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">升任' + escapeHtml(office ? office.name : "新职") + '：选择任路</div><div class="reward-options">' +
       draft.packages.map(function (pack, index) {
         var cards = (pack.cards || []).map(function (id) {
           var card = Game.cardById(id);
           return card ? card.name : id;
         }).join("、");
-        return '<button class="reward-card" data-office-pack-index="' + index + '"><b>' + escapeHtml(pack.name) + '</b><span>' + escapeHtml(pack.desc || "") + '</span><em>' + escapeHtml(cards) + '</em></button>';
+        return '<button class="reward-card" data-office-pack-index="' + index + '"><b>' + escapeHtml(pack.name) + '</b><span>' + escapeHtml(pack.desc || "") + '</span><em>沉淀手段：' + escapeHtml(cards) + '</em></button>';
       }).join("") +
       '</div></section>';
   }
@@ -532,7 +532,7 @@
       favor: { label: "情", title: "人情", cls: "cost--favor" },
       pressure: { label: "压", title: "压力", cls: "cost--pressure" }
     };
-    var keys = Object.keys(cost || {});
+    var keys = Object.keys(cost || {}).filter(function (key) { return !!cost[key]; });
     if (!keys.length) return '<span class="cost-chip cost--free" title="无费用">免</span>';
     return keys.map(function (key) {
       var item = map[key] || { label: key.slice(0, 1), title: key, cls: "cost--other" };
@@ -670,106 +670,60 @@
   function renderHand() {
     var s = Game.state;
     var locked = s.ended || !!s.pendingReward || !!s.pendingSummary;
-    el("hand-hint").innerHTML = (s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : s.pendingReward ? "旧档结案状态已转换为总结。" : s.hasDrawn ? "选择卡牌处理当前事务。费用不足的牌会变暗。" : "本季尚未抽牌。") +
+    var stage = Game.getCurrentChoiceStage ? Game.getCurrentChoiceStage() : null;
+    var complete = Game.currentEventChoicesComplete ? Game.currentEventChoicesComplete() : false;
+    el("hand-hint").innerHTML = (s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : complete ? "本季处置已完成，可以结束本季结案。" : stage ? "选择一项处置推进当前事务。费用不足的选项会变暗。" : "暂无可处置事务。") +
       ' <span class="cost-legend"><span>精=精力</span><span>银=银两</span><span>情=人情</span><span>压=压力</span></span>';
-    el("draw-button").disabled = s.hasDrawn || locked;
-    el("end-button").disabled = locked || !s.currentEvent;
-    var selected = s.selectedForExchange || [];
-    var exchangeReady = selected.length === 2;
-    var prepareOptions = Game.getPrepareOptions ? Game.getPrepareOptions() : [];
-    var prepareBar = (!s.hasDrawn && !locked && prepareOptions.length) ? '<div class="prepare-bar"><span>准备阶段</span>' + prepareOptions.map(function (option) {
-      var isPrepared = s.preparedAction === option.id;
-      return '<button data-prepare-action="' + escapeHtml(option.id) + '" class="ghost-button prepare-option' + (isPrepared ? " prepare-option--selected" : "") + '" aria-pressed="' + (isPrepared ? "true" : "false") + '" ' + (option.disabled ? "disabled" : "") + '><b>' + escapeHtml(option.name) + '</b><small>' + escapeHtml(option.desc) + '</small>' + (isPrepared ? '<span class="selected-mark">已选</span>' : "") + '</button>';
+    el("end-button").disabled = locked || !s.currentEvent || !complete;
+    if (!s.currentEvent || locked) {
+      el("hand-panel").innerHTML = '<div class="choices-empty"><p class="muted">' + (locked ? "本季事务已进入结算。" : "暂无事务。") + '</p></div>';
+      return;
+    }
+    var progress = s.currentEvent.choiceStages && s.currentEvent.choiceStages.length ? (Math.min((s.currentEvent.choiceStageIndex || 0) + 1, s.currentEvent.choiceStages.length) + "/" + s.currentEvent.choiceStages.length) : "";
+    var choiceLog = (s.currentEvent.choiceLog || []).length ? '<div class="choice-log"><div class="panel-title">已定处置</div>' + s.currentEvent.choiceLog.map(function (entry) {
+      return '<div class="choice-log-item"><b>' + escapeHtml(entry.stageTitle || "") + " · " + escapeHtml(entry.title || "") + '</b><p>' + escapeHtml(entry.outcomeText || entry.body || "") + '</p></div>';
     }).join("") + '</div>' : "";
-    var exchangeBar = '<div class="exchange-bar">' +
-      '<span>已选筹换：' + selected.length + '/2</span>' +
-      '<button data-exchange-resource="energy" class="ghost-button" ' + (exchangeReady && !locked ? "" : "disabled") + '>换精力</button>' +
-      '<button data-exchange-resource="money" class="ghost-button" ' + (exchangeReady && !locked ? "" : "disabled") + '>换银两</button>' +
-      '<button data-exchange-resource="favor" class="ghost-button" ' + (exchangeReady && !locked ? "" : "disabled") + '>换人情</button>' +
-      (s.keptCard ? '<span class="muted">已保留：《' + escapeHtml(s.keptCard.name) + '》</span>' : '<span class="muted">本季可保留 1 张牌到下季</span>') +
-      '</div>';
-    var html = s.hand.map(function (card) {
-      var playable = !locked && Game.canPlayCard(card);
-      var visual = cardVisual(card);
-      var modes = Game.getCardModes ? Game.getCardModes(card) : [];
-      var hints = Game.getCardHints ? Game.getCardHints(card) : [];
-      var preview = Game.getCardModePreview ? Game.getCardModePreview(card).slice(0, 4) : [];
-      if (!preview.length && modes.length && Game.getCardModePreview) {
-        preview = modes.slice(0, 2).map(function (mode) {
-          var modePreview = Game.getCardModePreview(card, mode.id).slice(0, 2).join("、");
-          return mode.name + (modePreview ? "：" + modePreview : "");
-        }).filter(Boolean);
-      }
-      var isSelected = selected.indexOf(card.instanceId) >= 0;
-      var tags = (card.tags || []).slice(0, 4).map(function (tag) {
+    if (complete) {
+      el("hand-panel").innerHTML = choiceLog + '<div class="choices-empty"><b>处置已定</b><p class="muted">两阶段抉择已经完成，点击“结束本季”查看结案总结。</p></div>';
+      return;
+    }
+    var choices = Game.getCurrentChoices ? Game.getCurrentChoices() : [];
+    var stageInfo = stage ? '<div class="choice-stage-head"><span>阶段 ' + escapeHtml(progress) + '</span><b>' + escapeHtml(stage.title || "处置") + '</b><p>' + escapeHtml(stage.desc || "") + '</p></div>' : "";
+    var html = choices.map(function (choice) {
+      var playable = !locked && Game.canChooseChoice(choice);
+      var preview = Game.getChoicePreview ? Game.getChoicePreview(choice).slice(0, 5) : [];
+      var cost = Game.getChoiceCost ? Game.getChoiceCost(choice) : (choice.cost || {});
+      var threat = Game.getChoiceThreat ? Game.getChoiceThreat(choice) : (choice.reactionRisk || 0);
+      var tags = (choice.tags || []).slice(0, 4).map(function (tag) {
         return '<span class="tag">' + escapeHtml(tag) + '</span>';
       }).join("");
       var previewHtml = preview.length ? '<div class="card-effects">' + preview.map(function (item) {
         return '<span>' + escapeHtml(item) + '</span>';
       }).join("") + '</div>' : "";
-      var hintHtml = hints.length ? '<div class="card-hints">' + hints.map(function (hint) {
-        return '<span>' + escapeHtml(hint) + '</span>';
-      }).join("") + '</div>' : "";
-      return '<article class="card ' + visual.cls + " " + (playable ? "card--playable" : "unplayable") + " " + (isSelected ? "card--selected" : "") + '">' +
-        (isSelected ? '<span class="selected-mark selected-mark--card">已选</span>' : "") +
+      var bonusHtml = choice.libraryBonus ? '<div class="card-hints"><span>' + escapeHtml(choice.libraryBonus) + '</span></div>' : "";
+      return '<article class="card choice-card ' + (playable ? "card--playable" : "unplayable") + '">' +
         '<div class="card-header">' +
           '<div class="card-title-block">' +
-            '<div class="card-type">' + escapeHtml(card.type) + " · " + escapeHtml(card.domain) + '</div>' +
-            '<h3>' + escapeHtml(card.name) + '</h3>' +
+            '<div class="card-type">事务处置 · 威胁 +' + escapeHtml(threat) + '</div>' +
+            '<h3>' + escapeHtml(choice.title) + '</h3>' +
           '</div>' +
-          '<div class="card-costs" aria-label="费用">' + renderCostChips(card.cost) + '</div>' +
+          '<div class="card-costs" aria-label="费用">' + renderCostChips(cost) + '</div>' +
         '</div>' +
-        '<div class="card-art" aria-hidden="true">' +
-          '<span class="card-art-symbol">' + escapeHtml(visual.mark) + '</span>' +
-          '<span class="card-art-stamp"></span>' +
-        '</div>' +
-        '<p class="card-desc">' + escapeHtml(card.desc) + '</p>' +
+        '<p class="card-desc">' + escapeHtml(choice.body || "") + '</p>' +
         previewHtml +
-        hintHtml +
+        bonusHtml +
         '<div class="card-footer">' +
           '<div class="tags">' + tags + '</div>' +
         '</div>' +
         '<div class="card-actions">' +
-          '<button data-card="' + card.instanceId + '" ' + (playable ? "" : "disabled") + '>' + (modes.length ? "用法" : "打出") + '</button>' +
-          '<button data-keep-card="' + card.instanceId + '" class="ghost-button" ' + (s.keptCard || locked ? "disabled" : "") + '>保留</button>' +
-          '<button data-exchange-card="' + card.instanceId + '" class="ghost-button" ' + (locked ? "disabled" : "") + '>' + (isSelected ? "取消筹换" : "筹换") + '</button>' +
+          '<button data-choice="' + escapeHtml(choice.id) + '" ' + (playable ? "" : "disabled") + '>选择</button>' +
         '</div>' +
         '</article>';
     }).join("");
-    el("hand-panel").innerHTML = prepareBar + exchangeBar + '<div class="cards">' + (html || '<p class="muted">手牌为空。点击抽牌开始处理本季事务。</p>') + '</div>';
-    Array.prototype.forEach.call(document.querySelectorAll("[data-prepare-action]"), function (button) {
+    el("hand-panel").innerHTML = choiceLog + stageInfo + '<div class="cards choice-grid">' + (html || '<p class="muted">当前阶段没有可选处置。</p>') + '</div>';
+    Array.prototype.forEach.call(document.querySelectorAll("[data-choice]"), function (button) {
       button.addEventListener("click", function () {
-        Game.prepareForSeason(button.getAttribute("data-prepare-action"));
-        Game.UI.render();
-      });
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-card]"), function (button) {
-      button.addEventListener("click", function () {
-        var instanceId = button.getAttribute("data-card");
-        var card = Game.state.hand.find(function (item) { return item.instanceId === instanceId; });
-        if (card && Game.getCardModes(card).length) {
-          Game.UI.showModeChoice(instanceId);
-        } else {
-          Game.playCard(instanceId);
-          Game.UI.render();
-        }
-      });
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-keep-card]"), function (button) {
-      button.addEventListener("click", function () {
-        Game.keepCard(button.getAttribute("data-keep-card"));
-        Game.UI.render();
-      });
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-exchange-card]"), function (button) {
-      button.addEventListener("click", function () {
-        Game.toggleExchangeCard(button.getAttribute("data-exchange-card"));
-        Game.UI.render();
-      });
-    });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-exchange-resource]"), function (button) {
-      button.addEventListener("click", function () {
-        Game.discardForResource(button.getAttribute("data-exchange-resource"));
+        Game.chooseChoice(button.getAttribute("data-choice"));
         Game.UI.render();
       });
     });
@@ -933,26 +887,15 @@
     });
   }
 
-  function allDeckCards() {
-    var s = Game.state || {};
-    return []
-      .concat((s.deck || []).map(function (card) { return { card: card, zone: "抽牌堆" }; }))
-      .concat((s.hand || []).map(function (card) { return { card: card, zone: "手牌" }; }))
-      .concat((s.discard || []).map(function (card) { return { card: card, zone: "弃牌堆" }; }))
-      .concat(s.keptCard ? [{ card: s.keptCard, zone: "保留" }] : [])
-      .concat((s.sealed || []).map(function (card) { return { card: card, zone: "封存" }; }));
-  }
-
   function deckItems() {
-    var map = {};
-    allDeckCards().forEach(function (entry) {
-      var card = entry.card;
-      if (!card || !card.id) return;
-      if (!map[card.id]) map[card.id] = { card: card, count: 0, zones: {} };
-      map[card.id].count += 1;
-      map[card.id].zones[entry.zone] = (map[card.id].zones[entry.zone] || 0) + 1;
-    });
-    return Object.keys(map).map(function (id) { return map[id]; }).sort(function (a, b) {
+    return (Game.getActionLibraryItems ? Game.getActionLibraryItems() : []).map(function (item) {
+      return {
+        card: item.card,
+        count: item.level || 1,
+        level: item.level || 1,
+        sources: item.sources || []
+      };
+    }).sort(function (a, b) {
       var negativeA = Game.isNegativeCard && Game.isNegativeCard(a.card);
       var negativeB = Game.isNegativeCard && Game.isNegativeCard(b.card);
       if (negativeA !== negativeB) return negativeA ? 1 : -1;
@@ -966,35 +909,29 @@
     return card.type === filter || card.domain === filter || tags.indexOf(filter) >= 0;
   }
 
-  function zoneText(zones) {
-    return Object.keys(zones).map(function (name) {
-      return name + " " + zones[name];
-    }).join(" / ");
-  }
-
   function renderDeckFilters(items) {
     var html = deckFilters.map(function (filter) {
       var count = items.reduce(function (sum, item) {
-        return sum + (cardMatchesFilter(item.card, filter.id) ? item.count : 0);
+        return sum + (cardMatchesFilter(item.card, filter.id) ? 1 : 0);
       }, 0);
       return '<button class="deck-filter ' + (deckFilter === filter.id ? "is-active" : "") + '" data-deck-filter="' + escapeHtml(filter.id) + '">' +
         '<span>' + escapeHtml(filter.label) + '</span><b>' + count + '</b>' +
       '</button>';
     }).join("");
     el("deck-filter-panel").innerHTML = html +
-      '<div class="deck-search-shell"><label for="deck-filter-note">筛选</label><div id="deck-filter-note" class="deck-note">按路线、污点与心病查看牌库结构。</div></div>';
+      '<div class="deck-search-shell"><label for="deck-filter-note">筛选</label><div id="deck-filter-note" class="deck-note">按路线查看已沉淀手段。</div></div>';
   }
 
   function deckStats(items) {
     var groups = [
-      ["行动牌", function (card) { return card.type !== "污点" && card.type !== "心病" && (card.tags || []).indexOf("政策") < 0 && (card.tags || []).indexOf("人脉") < 0; }],
-      ["关系牌", function (card) { return ["人情", "人物", "家族"].indexOf(card.type) >= 0 || (card.tags || []).indexOf("人情") >= 0 || (card.tags || []).indexOf("NPC") >= 0; }],
-      ["污点牌", function (card) { return card.type === "污点" || (card.tags || []).indexOf("污点") >= 0; }],
-      ["心病牌", function (card) { return card.type === "心病"; }]
+      ["政务法度", function (card) { return ["政务", "法度", "公文", "财政"].indexOf(card.type) >= 0 || ["政务", "法度", "财政"].indexOf(card.domain) >= 0; }],
+      ["清议近君", function (card) { return ["奏疏", "清议"].indexOf(card.type) >= 0 || (card.tags || []).indexOf("清流") >= 0 || (card.tags || []).indexOf("近君") >= 0; }],
+      ["人情转圜", function (card) { return ["人情", "人物", "家族"].indexOf(card.type) >= 0 || (card.tags || []).indexOf("人情") >= 0; }],
+      ["权谋险路", function (card) { return card.type === "权谋" || (card.tags || []).indexOf("权谋") >= 0 || (card.tags || []).indexOf("污点") >= 0; }]
     ];
     return groups.map(function (group) {
       var total = items.reduce(function (sum, item) {
-        return sum + (group[1](item.card) ? item.count : 0);
+        return sum + (group[1](item.card) ? 1 : 0);
       }, 0);
       return '<div class="deck-stat"><span>' + escapeHtml(group[0]) + '</span><b>' + total + '</b></div>';
     }).join("");
@@ -1008,7 +945,7 @@
       return '<span>' + escapeHtml(tag) + '</span>';
     }).join("");
     return '<button class="library-card ' + visual.cls + (active ? " is-active" : "") + '" data-deck-card="' + escapeHtml(card.id) + '">' +
-      '<div class="library-card-top"><b>' + escapeHtml(card.name) + '</b><em>×' + item.count + '</em></div>' +
+      '<div class="library-card-top"><b>' + escapeHtml(card.name) + '</b><em>Lv.' + item.level + '</em></div>' +
       '<div class="library-card-art"><span>' + escapeHtml(visual.mark) + '</span></div>' +
       '<div class="library-card-meta">' + escapeHtml(card.type) + ' · ' + escapeHtml(card.domain) + '</div>' +
       '<div class="library-card-tags">' + tags + '</div>' +
@@ -1017,7 +954,7 @@
 
   function renderDeckDetail(selected) {
     if (!selected) {
-      el("deck-detail-panel").innerHTML = '<p class="muted">牌库为空。</p>';
+      el("deck-detail-panel").innerHTML = '<p class="muted">手段库为空。</p>';
       return;
     }
     var card = selected.card;
@@ -1025,10 +962,11 @@
     var modes = Game.getCardModes ? Game.getCardModes(card) : (card.modes || []);
     var modeHtml = modes.length ? modes.map(function (mode) {
       return '<div class="detail-mode"><b>' + escapeHtml(mode.name) + '</b><span>' + escapeHtml(mode.desc || "") + '</span></div>';
-    }).join("") : '<p class="muted">此牌没有分支用法。</p>';
+    }).join("") : '<p class="muted">此手段会按事务语境转化为具体处置。</p>';
     var tags = (card.tags || []).map(function (tag) {
       return '<span class="tag">' + escapeHtml(tag) + '</span>';
     }).join("");
+    var sourceText = selected.sources && selected.sources.length ? selected.sources.join("、") : "仕途沉淀";
     el("deck-detail-panel").innerHTML =
       '<div class="detail-card ' + visual.cls + '">' +
         '<div class="detail-card-cost">' + renderCostChips(card.cost) + '</div>' +
@@ -1039,12 +977,10 @@
         '<div class="tags">' + tags + '</div>' +
       '</div>' +
       '<div class="section"><div class="panel-title">路线协同</div><div class="detail-modes">' + modeHtml + '</div></div>' +
-      '<div class="section deck-zone-note"><b>所在区域</b><span>' + escapeHtml(zoneText(selected.zones)) + '</span></div>' +
+      '<div class="section deck-zone-note"><b>沉淀来源</b><span>' + escapeHtml(sourceText) + '</span></div>' +
+      '<div class="section deck-zone-note"><b>手段等级</b><span>Lv.' + escapeHtml(selected.level || 1) + '</span></div>' +
       '<div class="deck-action-stack">' +
-        '<button disabled>升级</button>' +
-        '<button disabled class="scheme-button">异化</button>' +
-        '<button disabled class="ghost-button">移出</button>' +
-        '<button disabled>加入</button>' +
+        '<button disabled>等待事务调用</button>' +
       '</div>';
   }
 
@@ -1060,7 +996,7 @@
       selectedDeckId = filtered.length ? filtered[0].card.id : null;
     }
     var selected = filtered.find(function (item) { return item.card.id === selectedDeckId; }) || filtered[0] || null;
-    el("deck-grid-panel").innerHTML = filtered.length ? '<div class="library-grid">' + filtered.map(renderLibraryCard).join("") + '</div>' : '<p class="muted">当前筛选下没有卡牌。</p>';
+    el("deck-grid-panel").innerHTML = filtered.length ? '<div class="library-grid">' + filtered.map(renderLibraryCard).join("") + '</div>' : '<p class="muted">当前筛选下没有手段。</p>';
     renderDeckDetail(selected);
     Array.prototype.forEach.call(document.querySelectorAll("[data-deck-filter]"), function (button) {
       button.addEventListener("click", function () {
@@ -1282,7 +1218,7 @@
           '<div class="life-verdict"><b>史评</b>' + renderParagraphs(s.ended ? ending.text : "功过仍在变化，清名、能名、权势与污点会共同决定身后评语。") + '</div>' +
         '</aside>' +
         '<section class="life-timeline"><div class="panel-title">仕途时间线</div><div class="timeline-strip">' + timeline + '</div></section>' +
-        '<div class="life-actions"><button data-life-action="export">导出生平</button><button data-life-action="new" class="ghost-button">再开一局</button><button data-life-action="deck" class="ghost-button">查看牌库</button></div>' +
+        '<div class="life-actions"><button data-life-action="export">导出生平</button><button data-life-action="new" class="ghost-button">再开一局</button><button data-life-action="deck" class="ghost-button">查看手段库</button></div>' +
       '</div>';
     Array.prototype.forEach.call(document.querySelectorAll("[data-life-action]"), function (button) {
       button.addEventListener("click", function () {
@@ -1352,7 +1288,7 @@
           '<button data-mode-card="' + escapeHtml(instanceId) + '" data-mode-id="' + escapeHtml(mode.id) + '" ' + (canPay ? "" : "disabled") + '>使用</button>' +
         '</div>';
       }).join("");
-      showModal('<h2>选择用法：《' + escapeHtml(card.name) + '》</h2><p class="muted">同一张牌的不同用法会改变目标、代价和反制风险。</p><div class="mode-list">' + modeHtml + '</div>');
+      showModal('<h2>选择用法：《' + escapeHtml(card.name) + '》</h2><p class="muted">同一项手段的不同用法会改变目标、代价和反制风险。</p><div class="mode-list">' + modeHtml + '</div>');
       Array.prototype.forEach.call(document.querySelectorAll("[data-mode-card]"), function (button) {
         button.addEventListener("click", function () {
           Game.playCard(button.getAttribute("data-mode-card"), button.getAttribute("data-mode-id"));

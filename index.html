@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>官场浮沉</title>
-  <link rel="stylesheet" href="styles.css?v=card-effect-2">
+  <link rel="stylesheet" href="styles.css?v=choice-flow-1">
 </head>
 <body>
   <div id="app" class="app">
@@ -19,7 +19,7 @@
       <nav id="view-tabs" class="view-tabs" aria-label="主要视图">
         <button class="view-tab" data-view="main" aria-pressed="true">当前事务</button>
         <button class="view-tab" data-view="relations" aria-pressed="false">关系朝局</button>
-        <button class="view-tab" data-view="deck" aria-pressed="false">卡组牌库</button>
+        <button class="view-tab" data-view="deck" aria-pressed="false">手段库</button>
         <button class="view-tab" data-view="life" aria-pressed="false">生平卷</button>
       </nav>
       <div class="top-actions">
@@ -48,13 +48,11 @@
       <section class="panel hand-panel">
         <div class="hand-head">
           <div>
-            <div class="panel-title">行动手牌</div>
+            <div class="panel-title">处置选项</div>
             <p id="hand-hint" class="muted"></p>
           </div>
           <div class="round-actions">
-            <button id="draw-button">抽牌</button>
             <button id="end-button">结束本季</button>
-            <button id="deck-button" class="ghost-button">牌库</button>
           </div>
         </div>
         <div id="hand-panel"></div>
@@ -85,23 +83,23 @@
       </section>
     </section>
 
-    <section id="deck-view" class="app-view deck-screen hidden" aria-label="卡组牌库视图">
+    <section id="deck-view" class="app-view deck-screen hidden" aria-label="手段库视图">
       <aside class="panel deck-filter-shell">
-        <div class="panel-title">当前牌库</div>
+        <div class="panel-title">手段路线</div>
         <div id="deck-filter-panel"></div>
       </aside>
       <section class="panel deck-grid-shell">
         <div class="deck-grid-head">
           <div>
-            <div class="panel-title">卡组视图</div>
-            <p class="muted">抽牌堆、手牌、弃牌堆与保留牌合并查看。</p>
+            <div class="panel-title">手段库</div>
+            <p class="muted">查看已经沉淀的做官方法，以及它们会强化哪些事务处置。</p>
           </div>
           <div id="deck-stat-panel" class="deck-stat-strip"></div>
         </div>
         <div id="deck-grid-panel"></div>
       </section>
       <aside class="panel deck-detail-shell">
-        <div class="panel-title">卡牌详情</div>
+        <div class="panel-title">手段详情</div>
         <div id="deck-detail-panel"></div>
       </aside>
     </section>
@@ -125,7 +123,7 @@
   <script src="src/core/state.js?v=design-systems-3"></script>
   <script src="src/core/deck.js?v=design-systems-3"></script>
   <script src="src/core/rules.js?v=design-systems-3"></script>
-  <script src="src/ui/render.js?v=card-effect-2"></script>
+  <script src="src/ui/render.js?v=choice-flow-1"></script>
   <script src="src/main.js?v=ui-fix-4"></script>
 </body>
 </html>

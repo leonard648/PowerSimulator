@@ -37,6 +37,115 @@
     };
   }
 
+  var STARTING_ACTION_IDS = [
+    "memorial_direct", "careful_memorial", "academy_lecture", "write_edict",
+    "visit_mentor", "peer_letter", "peer_mediation", "refuse_gift", "court_debate",
+    "archive_search", "seal_document", "family_support", "marriage_plea",
+    "ritual_poem", "educate_heir", "copy_classics", "private_warning", "medical_rest"
+  ];
+
+  function cardDef(id) {
+    return (GameData.cards || []).find(function (card) { return card.id === id; });
+  }
+
+  function cardIdsFromZone(zone) {
+    return (zone || []).map(function (card) {
+      return card && card.id;
+    }).filter(function (id) {
+      var def = cardDef(id);
+      return !!id && !!def && def.type !== "污点" && def.type !== "心病";
+    });
+  }
+
+  function migrateOldNegativeCards(loaded) {
+    loaded.stains = loaded.stains || [];
+    loaded.ailments = loaded.ailments || [];
+    []
+      .concat(loaded.deck || [])
+      .concat(loaded.hand || [])
+      .concat(loaded.discard || [])
+      .concat(loaded.sealed || [])
+      .concat(loaded.keptCard ? [loaded.keptCard] : [])
+      .forEach(function (card) {
+        if (!card || !card.id) return;
+        var def = cardDef(card.id);
+        if (!def) return;
+        if (def.type === "污点" && loaded.stains.indexOf(card.id) < 0) loaded.stains.push(card.id);
+        if (def.type === "心病" && loaded.ailments.indexOf(card.id) < 0) loaded.ailments.push(card.id);
+      });
+  }
+
+  function createActionLibrary(ids, source) {
+    var library = { unlocked: {}, routes: [] };
+    (ids || STARTING_ACTION_IDS).forEach(function (id) {
+      if (!cardDef(id)) return;
+      library.unlocked[id] = library.unlocked[id] || {
+        id: id,
+        level: 1,
+        sources: []
+      };
+      if (source && library.unlocked[id].sources.indexOf(source) < 0) {
+        library.unlocked[id].sources.push(source);
+      }
+    });
+    return library;
+  }
+
+  function normalizeActionLibrary(loaded) {
+    migrateOldNegativeCards(loaded);
+    var ids = []
+      .concat(cardIdsFromZone(loaded.deck))
+      .concat(cardIdsFromZone(loaded.hand))
+      .concat(cardIdsFromZone(loaded.discard))
+      .concat(cardIdsFromZone(loaded.sealed))
+      .concat(cardIdsFromZone(loaded.keptCard ? [loaded.keptCard] : []));
+    var library = loaded.actionLibrary || null;
+    if (!library || !library.unlocked) {
+      library = createActionLibrary(ids.length ? ids : STARTING_ACTION_IDS, ids.length ? "旧存档迁移" : "入仕根基");
+    } else {
+      library.unlocked = library.unlocked || {};
+      library.routes = library.routes || [];
+      ids.forEach(function (id) {
+        if (!cardDef(id)) return;
+        library.unlocked[id] = library.unlocked[id] || { id: id, level: 1, sources: [] };
+        library.unlocked[id].sources = library.unlocked[id].sources || [];
+        if (library.unlocked[id].sources.indexOf("旧存档迁移") < 0) {
+          library.unlocked[id].sources.push("旧存档迁移");
+        }
+      });
+    }
+    Object.keys(library.unlocked).forEach(function (id) {
+      if (!cardDef(id)) {
+        delete library.unlocked[id];
+        return;
+      }
+      library.unlocked[id].id = id;
+      library.unlocked[id].level = Math.max(1, library.unlocked[id].level || 1);
+      library.unlocked[id].sources = library.unlocked[id].sources || [];
+    });
+    return library;
+  }
+
+  function normalizeLoadedEvent(event) {
+    if (!event) return null;
+    var template = (GameData.events || []).find(function (item) { return item.id === event.id; });
+    if (template && (!event.choiceStages || !event.choiceStages.length)) {
+      event.choiceStages = deepClone(template.choiceStages || []);
+    }
+    if (template && !event.story) {
+      event.story = {
+        hook: template.desc,
+        stakes: "此案已转入阶段处置：先查明底账，再定案表态。",
+        paragraphs: [template.desc, "旧存档已迁移为事务抉择流程，案卷仍按当前轨道继续。"]
+      };
+    }
+    event.choiceStageIndex = Math.max(0, event.choiceStageIndex || 0);
+    event.choicesTaken = event.choicesTaken || [];
+    event.choiceLog = event.choiceLog || [];
+    event.played = event.played || [];
+    return event;
+  }
+
   function officeById(id) {
     return GameData.offices.find(function (office) { return office.id === id; }) || GameData.offices[0];
   }
@@ -166,6 +275,7 @@
       },
       relations: createRelations(),
       npcs: createNpcs(),
+      actionLibrary: createActionLibrary(STARTING_ACTION_IDS, "入仕根基"),
       deck: [],
       hand: [],
       discard: [],
@@ -176,6 +286,7 @@
       pendingReward: null,
       pendingSummary: null,
       pendingOfficeDraft: null,
+      ailments: [],
       contacts: ["mentor", "peer_friend", "adviser"],
       policies: [],
       eventHistory: [],
@@ -225,6 +336,13 @@
       loaded.preparedAction = loaded.preparedThisSeason ? (loaded.preparedAction || null) : null;
       loaded.prepDrawBonus = loaded.prepDrawBonus || 0;
       loaded.pendingOfficeDraft = loaded.pendingOfficeDraft || null;
+      loaded.actionLibrary = normalizeActionLibrary(loaded);
+      loaded.deck = [];
+      loaded.hand = [];
+      loaded.discard = [];
+      loaded.sealed = loaded.sealed || [];
+      loaded.keptCard = null;
+      loaded.ailments = loaded.ailments || [];
       loaded.career = normalizeCareer(loaded.career, loaded.year || 1);
       loaded.npcs = normalizeNpcs(loaded.npcs);
       loaded.relationEventCooldowns = loaded.relationEventCooldowns || {};
@@ -239,6 +357,7 @@
         loaded.currentEvent.threat = loaded.currentEvent.threat || 0;
         loaded.currentEvent.threatMax = loaded.currentEvent.threatMax || 3;
         loaded.currentEvent.story = loaded.currentEvent.story || null;
+        normalizeLoadedEvent(loaded.currentEvent);
       }
       return loaded;
     } catch (err) {
@@ -261,12 +380,22 @@
     s.log = s.log.slice(0, 80);
   };
 
+  Game.getStartingActionIds = function () {
+    return STARTING_ACTION_IDS.slice();
+  };
+
+  Game.createActionLibrary = createActionLibrary;
+
+  Game.normalizeActionLibrary = normalizeActionLibrary;
+
   Game.boundState = function () {
     var s = Game.state;
     s.resources.energy = clamp(s.resources.energy, 0, 8);
     s.resources.money = clamp(s.resources.money, 0, 12);
     s.resources.favor = clamp(s.resources.favor, 0, 12);
     s.resources.pressure = clamp(s.resources.pressure, 0, 20);
+    s.actionLibrary = normalizeActionLibrary(s);
+    s.ailments = s.ailments || [];
     Object.keys(s.world).forEach(function (key) {
       s.world[key] = clamp(s.world[key], 0, 20);
     });

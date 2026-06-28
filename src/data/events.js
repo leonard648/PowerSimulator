@@ -462,6 +462,198 @@
     "贪墨诱因": { fame: { corruption: 1 }, text: "贪墨诱因未除，旁人看你的眼神更浑。" }
   };
 
+  function trackMap(names, amount) {
+    var result = {};
+    names.filter(Boolean).forEach(function (name) {
+      result[name] = amount;
+    });
+    return result;
+  }
+
+  function mergeTracks(base, extra) {
+    var result = {};
+    Object.keys(base || {}).forEach(function (key) { result[key] = base[key]; });
+    Object.keys(extra || {}).forEach(function (key) {
+      result[key] = (result[key] || 0) + extra[key];
+    });
+    return result;
+  }
+
+  function tagBag(tags) {
+    var result = {};
+    (tags || []).forEach(function (tag) { result[tag] = (result[tag] || 0) + 1; });
+    return result;
+  }
+
+  function firstMatchingTrack(event, patterns, fallback) {
+    var names = Object.keys(event.tracks || {});
+    for (var p = 0; p < patterns.length; p += 1) {
+      for (var i = 0; i < names.length; i += 1) {
+        if (names[i].indexOf(patterns[p]) >= 0) return names[i];
+      }
+    }
+    return fallback || names[0] || "";
+  }
+
+  function participantGroup(event) {
+    var joined = (event.participants || []).join("、") + "、" + event.name;
+    if (joined.indexOf("皇帝") >= 0 || joined.indexOf("内侍") >= 0 || joined.indexOf("景和帝") >= 0) return { id: "emperor", name: "君前" };
+    if (joined.indexOf("士林") >= 0 || joined.indexOf("书院") >= 0 || joined.indexOf("清议") >= 0 || joined.indexOf("陶闻道") >= 0 || joined.indexOf("叶慎言") >= 0) return { id: "scholars", name: "士林" };
+    if (joined.indexOf("座师") >= 0 || joined.indexOf("师门") >= 0 || joined.indexOf("沈如晦") >= 0) return { id: "mentor", name: "师门" };
+    if (joined.indexOf("同年") >= 0 || joined.indexOf("顾元衡") >= 0) return { id: "peers", name: "同年" };
+    if (joined.indexOf("地方士绅") >= 0 || joined.indexOf("士绅") >= 0 || joined.indexOf("林伯珩") >= 0) return { id: "gentry", name: "士绅" };
+    if (joined.indexOf("胥吏") >= 0 || joined.indexOf("书吏") >= 0 || joined.indexOf("曹衡") >= 0) return { id: "clerks", name: "胥吏" };
+    if (joined.indexOf("上司") >= 0 || joined.indexOf("赵廷瓒") >= 0) return { id: "superior", name: "上司" };
+    if (joined.indexOf("政敌") >= 0 || joined.indexOf("权臣") >= 0 || joined.indexOf("严绍") >= 0 || joined.indexOf("魏承弼") >= 0) return { id: "rival", name: "政敌" };
+    return { id: "peers", name: "熟人" };
+  }
+
+  function stainForOffice(office) {
+    if (office === "county") return "conceal_deficit";
+    if (office === "censor") return "withheld_file";
+    return "inner_palace_contact";
+  }
+
+  function choice(id, title, body, cost, effect, tags, outcomeText, reactionRisk, libraryTags, setFlags) {
+    return {
+      id: id,
+      title: title,
+      body: body,
+      cost: cost || {},
+      effect: effect || {},
+      tags: tags || [],
+      outcomeText: outcomeText,
+      reactionRisk: reactionRisk || 0,
+      libraryTags: libraryTags || tags || [],
+      setFlags: setFlags || {}
+    };
+  }
+
+  function buildChoiceStages(event) {
+    var criticalTracks = critical[event.id] || Object.keys(event.tracks || {}).slice(0, 2);
+    var first = criticalTracks[0] || Object.keys(event.tracks || {})[0] || "";
+    var second = criticalTracks[1] || Object.keys(event.tracks || {})[1] || first;
+    var evidence = firstMatchingTrack(event, ["证据", "案卷", "文辞", "文名"], first);
+    var publicTrack = firstMatchingTrack(event, ["民怨", "灾情", "清议", "流言", "治安"], second);
+    var relationTrack = firstMatchingTrack(event, ["派系", "士绅", "胥吏", "朋党", "政敌", "上司", "举荐"], second);
+    var deadline = firstMatchingTrack(event, ["期限", "流程", "钱粮", "上意"], first);
+    var group = participantGroup(event);
+    var relationEffect = {};
+    relationEffect[group.id] = group.id === "rival" ? { resentment: -1 } : group.id === "emperor" ? { trust: 1 } : { closeness: 1, debt: 1 };
+    var hardRelation = {};
+    hardRelation[group.id] = group.id === "rival" ? { resentment: 1, fear: 1 } : { resentment: 1 };
+
+    return [
+      {
+        id: "probe",
+        title: "查明底账",
+        desc: "先把这桩事的来路查清，再决定把刀落在哪里。",
+        choices: [
+          choice(
+            "probe_records",
+            "翻旧卷，核实来路",
+            "你没有急着表态，只让人把旧档、来文和旁证一并摊开。纸页翻到深处，" + evidence + "的虚实开始露出边角。",
+            { energy: 1 },
+            { tracks: mergeTracks(trackMap([evidence], -3), trackMap([deadline], -1)), tags: tagBag(["能吏"]) },
+            ["能吏", "法度"],
+            "旧卷被重新系好，案中最含混的一处已经能说出眉目。",
+            0,
+            ["能吏", "法度", "政务"],
+            { records_found: 1 }
+          ),
+          choice(
+            "probe_people",
+            "请人递话，听暗处口风",
+            "你让话先从" + group.name + "那边绕一圈回来。明面上只是问安，暗地里却试出谁急、谁怕、谁等着你失言。",
+            { favor: 1 },
+            { tracks: mergeTracks(trackMap([relationTrack], -3), trackMap([second], -1)), relations: relationEffect, tags: tagBag(["圆滑"]) },
+            ["圆滑", "人情"],
+            "几句不落纸面的回话送回案前，局面没有变轻，却有了可转圜的缝。",
+            0,
+            ["圆滑", "人情"]
+          ),
+          choice(
+            "probe_public",
+            "先稳人心，压住外声",
+            "你把堂外和坊间最急的声音先收拢起来：该安抚的安抚，该张榜的张榜，不让传言替你先判了这桩事。",
+            { energy: 1 },
+            { tracks: trackMap([publicTrack, second], -2), fame: { clean: 1 }, world: { publicMood: event.office === "county" ? 1 : 0, scholarOpinion: event.office !== "county" ? 1 : 0 }, tags: tagBag(["仁政", "清流"]) },
+            ["仁政", "清流"],
+            "人声稍稍退开，至少在你落笔之前，局外人不再只听最坏的版本。",
+            0,
+            ["仁政", "清流", "才学"]
+          ),
+          choice(
+            "probe_pressure",
+            "连夜逼问，先撬开缺口",
+            "灯油烧到后半夜，你把人和账都压在案前。此法快，也锋利，锋利到旁人会记住你的手劲。",
+            { energy: 1, pressure: 1 },
+            { tracks: trackMap([first], -4), relations: hardRelation, fame: { cruel: 1 }, tags: tagBag(["酷吏", "权谋"]) },
+            ["酷吏", "权谋"],
+            "最硬的一处被你撬动了，可屋里每个人都听见了木头开裂的声音。",
+            1,
+            ["权谋", "法度", "酷吏"],
+            { forced_gap: 1 }
+          )
+        ]
+      },
+      {
+        id: "settle",
+        title: "定案表态",
+        desc: "底细已有眉目，接下来要把此事写成能承担后果的处置。",
+        choices: [
+          choice(
+            "settle_procedure",
+            "按证据定案，留足成例",
+            "你把证据、成例和责任次第排开，不让任何一方只凭声势改写案情。结论未必讨巧，却能经得起复看。",
+            { energy: 1 },
+            { tracks: mergeTracks(trackMap([first], -3), trackMap([second], -2)), fame: { competence: 1 }, world: { courtPressure: -1 }, tags: tagBag(["能吏"]) },
+            ["能吏", "法度"],
+            "批语落下时，案卷像终于有了骨架，旁人再想添枝也难了些。",
+            0,
+            ["能吏", "法度", "政务"],
+            { settled_by_law: 1 }
+          ),
+          choice(
+            "settle_principle",
+            "据实上呈，把话说到明处",
+            "你没有把最难看的部分藏进套话里，而是把利害、风险和自己的判断一并写上去。清白不是退路，是代价。",
+            { energy: 1 },
+            { tracks: mergeTracks(trackMap([first], -2), trackMap([publicTrack], -3)), fame: { clean: 1 }, world: { emperorTrust: event.office === "hanlin" || event.office === "censor" ? 1 : 0, scholarOpinion: 1 }, tags: tagBag(["清流"]) },
+            ["清流", "奏疏"],
+            "话说到明处后，许多人不便再装作没看见，也有人从此记住你刺眼。",
+            1,
+            ["清流", "奏疏", "才学"],
+            { public_mandate: 1 }
+          ),
+          choice(
+            "settle_compromise",
+            "分责留台阶，换各方退半步",
+            "你把责任拆开，也把体面分出去。谁都不能说自己全胜，却也不必当场撕破脸。",
+            { favor: 1 },
+            { tracks: mergeTracks(trackMap([relationTrack], -4), trackMap([deadline], -1)), relations: relationEffect, fame: { clean: -1 }, resources: { pressure: -1 }, tags: tagBag(["圆滑"]) },
+            ["圆滑", "人情"],
+            "台阶搭好后，众人退得很慢，却总算开始后退。",
+            0,
+            ["圆滑", "人情"]
+          ),
+          choice(
+            "settle_shadow",
+            "走暗门，先把风波压下",
+            "你接过那条不能写进公文的路：有人补账，有人递话，有人替你把最刺眼的一页暂时按住。",
+            { money: event.office === "county" ? 1 : 0, pressure: 1 },
+            { tracks: mergeTracks(trackMap([first, deadline], -3), trackMap([relationTrack], -2)), fame: { power: 1, clean: -1, corruption: event.office === "county" ? 1 : 0 }, addStain: stainForOffice(event.office), tags: tagBag(["权谋", event.office === "county" ? "贪腐" : "圆滑"]) },
+            ["权谋", "贪腐"],
+            "风波被压住了，可你知道有一页账只是换了地方存放。",
+            2,
+            ["权谋", "财政", "人情"],
+            { shadow_settlement: 1 }
+          )
+        ]
+      }
+    ];
+  }
+
   GameData.events.forEach(function (event) {
     event.criticalTracks = critical[event.id] || Object.keys(event.tracks).slice(0, 2);
     event.failureHooks = hooks;
@@ -473,5 +665,6 @@
       { source: "上意不明", add: { "上意不明": 1 }, text: "宫中风向摇摆，上意更加难测。" },
       { source: "清议沸腾", add: { "清议沸腾": 1, "派系阻挠": 1 }, text: "清议被人借题发挥。" }
     ];
+    event.choiceStages = event.choiceStages && event.choiceStages.length ? event.choiceStages : buildChoiceStages(event);
   });
 })();

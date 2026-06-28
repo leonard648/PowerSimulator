@@ -3473,6 +3473,66 @@ body {
   }
 }
 
+.choice-stage-head {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(116, 82, 43, 0.18);
+  background: rgba(255, 252, 245, 0.72);
+}
+
+.choice-stage-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.choice-stage-head b {
+  font-size: 18px;
+}
+
+.choice-stage-head p,
+.choice-log-item p,
+.choices-empty p {
+  margin: 0;
+}
+
+.choice-grid {
+  align-items: stretch;
+}
+
+.choice-card {
+  min-height: 260px;
+}
+
+.choice-card .card-desc {
+  min-height: 74px;
+}
+
+.choice-log {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.choice-log-item {
+  padding: 10px 12px;
+  border: 1px solid rgba(116, 82, 43, 0.16);
+  background: rgba(248, 243, 232, 0.78);
+}
+
+.choice-log-item b {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.choices-empty {
+  padding: 18px;
+  border: 1px dashed rgba(116, 82, 43, 0.24);
+  background: rgba(255, 252, 245, 0.58);
+}
+
 @media (max-width: 680px) {
   .app {
     width: calc(100vw - 18px);

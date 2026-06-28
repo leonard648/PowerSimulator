@@ -25,6 +25,35 @@
     return card.type === "污点" || card.type === "心病";
   }
 
+  function ensureLibrary() {
+    Game.state.actionLibrary = Game.normalizeActionLibrary ? Game.normalizeActionLibrary(Game.state) : (Game.state.actionLibrary || { unlocked: {}, routes: [] });
+    return Game.state.actionLibrary;
+  }
+
+  function libraryEntry(id) {
+    var library = ensureLibrary();
+    return library.unlocked[id] || null;
+  }
+
+  function unlockAction(id, source) {
+    var card = cardById(id);
+    if (!card) return null;
+    var library = ensureLibrary();
+    var entry = library.unlocked[id];
+    var existed = !!entry;
+    if (!entry) {
+      entry = { id: id, level: 1, sources: [] };
+      library.unlocked[id] = entry;
+    } else {
+      entry.sources = entry.sources || [];
+    }
+    if (existed && source && entry.sources.indexOf(source) < 0) {
+      entry.level = Math.min(3, (entry.level || 1) + 1);
+    }
+    if (source && entry.sources.indexOf(source) < 0) entry.sources.push(source);
+    return card;
+  }
+
   var officeCardPools = {
     county: [
       "survey_fields", "open_granary", "audit_accounts", "banquet_gentry",
@@ -98,6 +127,32 @@
 
   Game.cardById = cardById;
 
+  Game.getActionLibrary = function () {
+    return ensureLibrary();
+  };
+
+  Game.hasAction = function (id) {
+    return !!libraryEntry(id);
+  };
+
+  Game.unlockAction = unlockAction;
+
+  Game.getActionLibraryItems = function () {
+    var library = ensureLibrary();
+    return Object.keys(library.unlocked).map(function (id) {
+      var card = cardById(id);
+      if (!card) return null;
+      return {
+        id: id,
+        card: card,
+        level: library.unlocked[id].level || 1,
+        sources: library.unlocked[id].sources || []
+      };
+    }).filter(Boolean).sort(function (a, b) {
+      return a.card.name.localeCompare(b.card.name, "zh-Hans-CN");
+    });
+  };
+
   Game.cloneCardById = function (id) {
     var source = cardById(id);
     return source ? cloneCard(source) : null;
@@ -110,7 +165,10 @@
       "archive_search", "seal_document", "family_support", "marriage_plea",
       "ritual_poem", "educate_heir", "copy_classics", "private_warning", "medical_rest"
     ];
-    Game.state.deck = shuffle(baseIds.map(function (id) { return cloneCard(cardById(id)); }));
+    Game.state.actionLibrary = Game.createActionLibrary ? Game.createActionLibrary(baseIds, "入仕根基") : { unlocked: {}, routes: [] };
+    Game.state.deck = [];
+    Game.state.hand = [];
+    Game.state.discard = [];
   };
 
   Game.getOfficeCardPackages = function (officeId) {
@@ -125,16 +183,9 @@
   };
 
   Game.addOfficeCards = function (officeId, selectedIds) {
-    var starters = starterByOffice[officeId] || [];
     validIds(selectedIds && selectedIds.length ? selectedIds : officeCardPools[officeId]).forEach(function (id) {
-      var card = cloneCard(cardById(id));
-      if (starters.indexOf(id) >= 0) {
-        Game.state.deck.push(card);
-      } else {
-        Game.state.discard.push(card);
-      }
+      unlockAction(id, Game.getOfficeById ? ("转任" + Game.getOfficeById(officeId).name) : "转任新职");
     });
-    if (starters.length) Game.state.deck = shuffle(Game.state.deck);
   };
 
   Game.queueOfficeCardDraft = function (officeId) {
@@ -155,7 +206,7 @@
     if (!draft || !draft.packages || !draft.packages[index]) return false;
     var pack = draft.packages[index];
     Game.addOfficeCards(draft.officeId, pack.cards);
-    Game.addLog("升迁选包：" + pack.name + "入库。");
+    Game.addLog("升迁择路：" + pack.name + "写入手段库。");
     Game.state.pendingOfficeDraft = null;
     return true;
   };
@@ -200,23 +251,22 @@
 
   Game.discardCard = function (card) {
     if (!card) return;
-    Game.state.discard.push(card);
+    unlockAction(card.id, "旧流程兼容");
   };
 
   Game.addCardToDiscard = function (id) {
-    var card = Game.cloneCardById(id);
-    if (!card) return null;
-    Game.state.discard.push(card);
-    return card;
+    return unlockAction(id, "事务沉淀");
   };
 
   Game.removeFirstCardByIds = function (ids) {
     var s = Game.state;
-    var zones = ["discard", "deck", "hand"];
-    for (var z = 0; z < zones.length; z += 1) {
-      var zone = zones[z];
-      var index = s[zone].findIndex(function (card) { return ids.indexOf(card.id) >= 0; });
-      if (index >= 0) return s[zone].splice(index, 1)[0];
+    var library = ensureLibrary();
+    for (var i = 0; i < ids.length; i += 1) {
+      var id = ids[i];
+      if (library.unlocked[id]) {
+        delete library.unlocked[id];
+        return cardById(id);
+      }
     }
     return null;
   };
@@ -225,17 +275,20 @@
     var fromIds = Object.keys(pairs);
     var removed = Game.removeFirstCardByIds(fromIds);
     if (!removed) return null;
-    var upgraded = Game.addCardToDiscard(pairs[removed.id]);
+    var upgraded = unlockAction(pairs[removed.id], "升格旧法");
+    var entry = upgraded && libraryEntry(upgraded.id);
+    if (entry) entry.level = Math.max(2, entry.level || 1);
     return upgraded ? { from: removed, to: upgraded } : null;
   };
 
   Game.addNegativeCard = function (id) {
     var source = cardById(id);
     if (!source) return;
-    var card = cloneCard(source);
-    Game.state.discard.push(card);
     if (source.type === "污点") {
       Game.state.stains.push(id);
+    } else if (source.type === "心病") {
+      Game.state.ailments = Game.state.ailments || [];
+      Game.state.ailments.push(id);
     }
   };
 
@@ -244,18 +297,14 @@
     if (s.resources.pressure >= 8 && Math.random() < 0.45) {
       var pool = ["sleepless", "guilty_conscience", "fear_purge", "burnout"];
       Game.addNegativeCard(pool[Math.floor(Math.random() * pool.length)]);
-      Game.addLog("压力郁积，心病入牌库。");
+      Game.addLog("压力郁积，心病入档。");
     }
   };
 
   Game.deckSummary = function () {
-    var zones = []
-      .concat(Game.state.deck)
-      .concat(Game.state.hand)
-      .concat(Game.state.discard);
     var counts = {};
-    zones.forEach(function (card) {
-      counts[card.name] = (counts[card.name] || 0) + 1;
+    Game.getActionLibraryItems().forEach(function (item) {
+      counts[item.card.name] = (counts[item.card.name] || 0) + 1;
     });
     return Object.keys(counts).sort().map(function (name) {
       return { name: name, count: counts[name] };

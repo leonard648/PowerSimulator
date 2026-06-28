@@ -72,7 +72,7 @@
     card("imperial_mood", "揣摩圣意", "权谋", "权谋", ["御史", "近君", "权谋"], { energy: 1 }, { tracks: { "上意不明": -3, "派系阻挠": -1 }, world: { emperorTrust: 1, scholarOpinion: -1 }, tags: { 权谋: 1 } }, "并非每一句话都写在谕旨里。"),
     card("burn_private_letter", "焚毁私札", "权谋", "权谋", ["权谋", "污点", "朝廷"], { energy: 1, pressure: 1 }, { tracks: { "政敌反扑": -3, "证据不足": -1 }, fame: { clean: -1, power: 1 }, addStain: "withheld_file", tags: { 权谋: 1 } }, "纸灰不会说话，但纸灰本身也可疑。"),
 
-    card("sleepless", "夜不能寐", "心病", "压力", ["心病"], { energy: 1 }, { resources: { pressure: 1 }, dead: true }, "心病牌。抽到时占据手牌，打出只能稍作整理。"),
+    card("sleepless", "夜不能寐", "心病", "压力", ["心病"], { energy: 1 }, { resources: { pressure: 1 }, dead: true }, "心病旧痕。压力高时入档，日后会拖累身体与判断。"),
     card("fear_purge", "恐惧清算", "心病", "压力", ["心病"], { energy: 1 }, { resources: { pressure: 2 }, world: { emperorTrust: -1 }, dead: true }, "心病牌。越接近权力，越怕有一日轮到自己。"),
     card("guilty_conscience", "良心不安", "心病", "压力", ["心病"], { energy: 1 }, { resources: { pressure: 1 }, fame: { clean: 1 }, dead: true }, "心病牌。旧事会在夜里来问。"),
     card("burnout", "倦怠成疾", "心病", "压力", ["心病"], { energy: 2 }, { resources: { pressure: -1 }, dead: true }, "心病牌。处理它会消耗宝贵精力。"),

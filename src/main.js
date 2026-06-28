@@ -2,7 +2,7 @@
   function boot(useSave) {
     var loaded = useSave ? Game.load() : null;
     Game.state = loaded || Game.createNewState();
-    if (!loaded || !Game.state.deck || (Game.state.deck.length === 0 && Game.state.discard.length === 0)) {
+    if (!loaded || !Game.state.actionLibrary || !Object.keys(Game.state.actionLibrary.unlocked || {}).length) {
       Game.buildStartingDeck();
       Game.addLog("新科进士入仕，授翰林清职。");
     }
@@ -26,20 +26,10 @@
   };
 
   document.addEventListener("DOMContentLoaded", function () {
-    document.getElementById("draw-button").addEventListener("click", function () {
-      Game.drawCards(Game.getOffice().handLimit);
-      Game.UI.render();
-    });
-
     document.getElementById("end-button").addEventListener("click", function () {
       Game.endQuarter();
       Game.UI.render();
       if (Game.state.ended) Game.UI.showEnding();
-    });
-
-    document.getElementById("deck-button").addEventListener("click", function () {
-      Game.UI.setView("deck");
-      window.location.hash = "deck";
     });
 
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (button) {

@@ -101,7 +101,7 @@
         }
       }
       recordCareer("promotion", text);
-      Game.addLog(text + " 新的职责与牌池已经展开。");
+      Game.addLog(text + " 新的职责与手段库已经展开。");
       pushStoryBeat("promotion", "升任" + next.name, "吏部文书送到时，朱印压得很实。你知道这不是奖赏的终点，只是把你推到更亮、更险的位置。");
       promoted = true;
     }
@@ -410,7 +410,7 @@
     var lines = [styleMoodLine()];
     if (s.resources.pressure >= 12) lines.push("连月压力已重，案卷尚未展开，身体却先记住了仕途的代价。");
     if (s.stains.length) {
-      lines.push("旧日留下的" + s.stains.length + "处污点仍在牌库深处沉着，像有人替它们记着可以重见天日的时辰。");
+      lines.push("旧日留下的" + s.stains.length + "处污点仍在案底沉着，像有人替它们记着可以重见天日的时辰。");
     }
     var riskLine = highRelationRisk();
     if (riskLine) lines.push(riskLine);
@@ -578,6 +578,10 @@
       story: makeEventStory(template),
       tracks: tracks,
       criticalTracks: (template.criticalTracks || Object.keys(template.tracks).slice(0, 2)).slice(),
+      choiceStages: Game.Util.deepClone(template.choiceStages || []),
+      choiceStageIndex: 0,
+      choicesTaken: [],
+      choiceLog: [],
       reactions: Game.Util.deepClone(template.reactions || []),
       failureHooks: template.failureHooks || {},
       successEffect: Game.Util.deepClone(template.successEffect || {}),
@@ -702,26 +706,16 @@
   function removeFirstNegativeCard() {
     var s = Game.state;
     var stainId = s.stains.length ? s.stains.shift() : null;
-    var zones = ["deck", "hand", "discard"];
-    var removed = null;
-
-    zones.some(function (zone) {
-      var index = s[zone].findIndex(function (card) {
-        return stainId ? card.id === stainId : Game.isNegativeCard(card);
-      });
-      if (index < 0) return false;
-      removed = s[zone].splice(index, 1)[0];
-      return true;
-    });
-
-    if (!removed && stainId) {
-      removed = Game.cardById(stainId);
-    } else if (removed && !stainId && removed.type === "污点") {
-      var stainIndex = s.stains.indexOf(removed.id);
-      if (stainIndex >= 0) s.stains.splice(stainIndex, 1);
+    if (stainId) {
+      var stain = Game.cardById(stainId);
+      return stain ? stain.name : stainId;
     }
-
-    return removed ? removed.name : "";
+    if (s.ailments && s.ailments.length) {
+      var ailmentId = s.ailments.shift();
+      var ailment = Game.cardById(ailmentId);
+      return ailment ? ailment.name : ailmentId;
+    }
+    return "";
   }
 
   function styleRewardOption(style) {
@@ -781,8 +775,7 @@
   }
 
   function hasAnyCard(ids) {
-    var zones = Game.state.deck.concat(Game.state.hand, Game.state.discard);
-    return zones.some(function (card) { return ids.indexOf(card.id) >= 0; });
+    return ids.some(function (id) { return Game.hasAction && Game.hasAction(id); });
   }
 
   function refineRewardOption(result) {
@@ -797,12 +790,12 @@
     };
     var upgradeIds = Object.keys(upgradePairs);
     if (hasAnyCard(upgradeIds)) {
-      return { id: "upgrade_deck", name: "升格旧法", desc: "将一张基础手段升级为路线牌。", effect: { upgradeOne: upgradePairs } };
+      return { id: "upgrade_deck", name: "升格旧法", desc: "将一项基础手段升级为路线手段。", effect: { upgradeOne: upgradePairs } };
     }
-    if (Game.state.stains.length || Game.state.deck.concat(Game.state.discard, Game.state.hand).some(Game.isNegativeCard)) {
-      return { id: "clean_trace", name: "清理旧痕", desc: "移除一张污点或心病牌，压力 +1，清名 +1。", effect: { removeNegative: 1, resources: { pressure: 1 }, fame: { clean: 1 } } };
+    if (Game.state.stains.length || (Game.state.ailments || []).length) {
+      return { id: "clean_trace", name: "清理旧痕", desc: "移除一处污点或心病旧痕，压力 +1，清名 +1。", effect: { removeNegative: 1, resources: { pressure: 1 }, fame: { clean: 1 } } };
     }
-    return { id: "trim_deck", name: "裁汰冗牍", desc: "删去一张基础牌，牌库更干净。", effect: { removeOne: ["seal_document", "peer_letter", "family_support", "marriage_plea", "copy_classics", "medical_rest"] } };
+    return { id: "trim_deck", name: "裁汰冗牍", desc: "删去一项不常用的基础手段，手段库更精简。", effect: { removeOne: ["seal_document", "peer_letter", "family_support", "marriage_plea", "copy_classics", "medical_rest"] } };
   }
 
   function cardName(id) {
@@ -824,7 +817,7 @@
     return {
       id: "gap_card",
       name: "补足短板",
-      desc: "针对未解阻力获得《" + cardName(id) + "》，下次遇到同类局面更有抓手。",
+      desc: "针对未解阻力沉淀一项“" + cardName(id) + "”式手段，下次遇到同类局面更有抓手。",
       effect: { addCard: id }
     };
   }
@@ -835,8 +828,8 @@
     var stainId = office === "county" ? "conceal_deficit" : office === "censor" ? "withheld_file" : "inner_palace_contact";
     return {
       id: "tainted_card",
-      name: "险路强牌",
-      desc: "获得《" + cardName(cardId) + "》，同时留下《" + cardName(stainId) + "》。短期很强，身后账重。",
+      name: "险路强招",
+      desc: "沉淀一项偏险的暗线手段，同时留下《" + cardName(stainId) + "》。短期很强，身后账重。",
       effect: { addCard: cardId, addStain: stainId, resources: { pressure: 1 } }
     };
   }
@@ -847,7 +840,7 @@
     var routeOption = {
       id: "route_card",
       name: "沉淀路线",
-      desc: "获得《" + (draftCard ? draftCard.name : draftId) + "》，顺着当前为官方法继续成型。",
+      desc: "将“" + (draftCard ? draftCard.name : draftId) + "”沉淀为后续事务可借用的手段。",
       effect: { addCard: draftId }
     };
     var gapOption = gapRewardOption(result);
@@ -873,20 +866,20 @@
     }
     if (effect.addCard) {
       var added = Game.addCardToDiscard(effect.addCard);
-      if (added) notes.push("新牌入库：《" + added.name + "》");
+      if (added) notes.push("手段沉淀：《" + added.name + "》");
     }
     if (effect.addStain) {
       Game.addNegativeCard(effect.addStain);
       var stain = Game.cardById(effect.addStain);
-      notes.push("污点入库：《" + (stain ? stain.name : effect.addStain) + "》");
+      notes.push("污点入档：《" + (stain ? stain.name : effect.addStain) + "》");
     }
     if (effect.removeOne) {
       var removedCard = Game.removeFirstCardByIds(effect.removeOne);
-      notes.push(removedCard ? "裁汰：《" + removedCard.name + "》" : "没有可裁汰的牌");
+      notes.push(removedCard ? "裁汰手段：《" + removedCard.name + "》" : "没有可裁汰的手段");
     }
     if (effect.upgradeOne) {
       var upgraded = Game.upgradeFirstCard(effect.upgradeOne);
-      notes.push(upgraded ? "升格：《" + upgraded.from.name + "》→《" + upgraded.to.name + "》" : "没有可升格的旧牌");
+      notes.push(upgraded ? "升格手段：《" + upgraded.from.name + "》→《" + upgraded.to.name + "》" : "没有可升格的旧法");
     }
     notes = notes
       .concat(describeDeltas("", effect.resources || {}, mapResourceName))
@@ -1005,8 +998,8 @@
     Object.keys(effect.relations || {}).forEach(function (id) {
       lines = lines.concat(describeDeltas(relationName(id) + "·", effect.relations[id], relationMetricName));
     });
-    if (effect.addStain) lines.push("污点入库：《" + cardName(effect.addStain) + "》");
-    if (effect.addCard) lines.push("新牌：《" + cardName(effect.addCard) + "》");
+    if (effect.addStain) lines.push("污点入档：《" + cardName(effect.addStain) + "》");
+    if (effect.addCard) lines.push("手段沉淀：《" + cardName(effect.addCard) + "》");
     return lines.slice(0, 7);
   }
 
@@ -1017,7 +1010,7 @@
       if (!event || !event.tracks[track]) return;
       var before = event.tracks[track].value;
       var delta = effect.tracks[track];
-      if (card.domain === "政务" && s.contacts.indexOf("adviser") >= 0 && delta < 0) delta -= 1;
+      if ((card.domain === "政务" || cardHasAnyTag(card, ["能吏", "政务"])) && s.contacts.indexOf("adviser") >= 0 && delta < 0) delta -= 1;
       event.tracks[track].value = Game.Util.clamp(before + delta, 0, event.tracks[track].max + 5);
       if (event.tracks[track].value !== before) {
         notes.push(track + " " + (event.tracks[track].value - before));
@@ -1063,7 +1056,7 @@
 
     if (effect.addStain) {
       Game.addNegativeCard(effect.addStain);
-      notes.push("污点入库：" + Game.cardById(effect.addStain).name);
+      notes.push("污点入档：" + Game.cardById(effect.addStain).name);
     }
 
     var flags = Object.assign({}, card.setFlags || {}, mode && mode.setFlags ? mode.setFlags : {});
@@ -1078,7 +1071,7 @@
       .concat(describeDeltas("", effect.fame || {}, mapFameName))
       .concat(describeDeltas("", effect.world || {}, mapWorldName));
 
-    if (effect.dead) notes.push("这张负面牌被暂时处理。");
+    if (effect.dead) notes.push("这处旧痕被暂时处理。");
     if (event) event.played.push(card.name + (mode ? "·" + mode.name : ""));
     Game.boundState();
     return notes;
@@ -1166,6 +1159,184 @@
     }
   }
 
+  function choiceTags(choice) {
+    var tags = (choice.tags || []).slice();
+    Object.keys(choice.effect && choice.effect.tags || {}).forEach(function (tag) {
+      if (tags.indexOf(tag) < 0) tags.push(tag);
+    });
+    return tags;
+  }
+
+  function actionMatchesChoice(item, tags) {
+    var card = item.card || {};
+    if (tags.indexOf(item.id) >= 0) return true;
+    if (tags.indexOf(card.type) >= 0 || tags.indexOf(card.domain) >= 0) return true;
+    return (card.tags || []).some(function (tag) { return tags.indexOf(tag) >= 0; });
+  }
+
+  function libraryBoost(choice) {
+    var tags = (choice.libraryTags || choice.tags || []).slice();
+    if (!tags.length || !Game.getActionLibraryItems) return null;
+    var matches = Game.getActionLibraryItems().filter(function (item) {
+      if (!actionMatchesChoice(item, tags)) return false;
+      var sources = item.sources || [];
+      return (item.level || 1) > 1 || sources.some(function (source) {
+        return source !== "入仕根基" && source !== "旧存档迁移";
+      });
+    });
+    if (!matches.length) return null;
+    matches.sort(function (a, b) {
+      if ((b.level || 1) !== (a.level || 1)) return (b.level || 1) - (a.level || 1);
+      return (b.sources || []).length - (a.sources || []).length;
+    });
+    return {
+      amount: Math.min(2, matches[0].level || 1),
+      label: matches[0].card.name
+    };
+  }
+
+  function enhancedChoice(choice, event) {
+    var copy = Game.Util.deepClone(choice || {});
+    copy.tags = choiceTags(copy);
+    copy.effect = copy.effect || {};
+    copy.effect.tracks = copy.effect.tracks || {};
+    var boost = libraryBoost(copy);
+    if (!boost || !event) return copy;
+    var candidates = Object.keys(copy.effect.tracks).filter(function (track) {
+      return event.tracks[track] && copy.effect.tracks[track] < 0;
+    });
+    if (!candidates.length) {
+      candidates = (event.criticalTracks || []).filter(function (track) { return event.tracks[track]; });
+    }
+    var target = candidates.sort(function (a, b) {
+      return (event.tracks[b] ? event.tracks[b].value : 0) - (event.tracks[a] ? event.tracks[a].value : 0);
+    })[0];
+    if (!target) return copy;
+    copy.effect.tracks[target] = (copy.effect.tracks[target] || 0) - boost.amount;
+    copy.libraryBonus = "手段库加成：" + target + " -" + boost.amount + "（" + boost.label + "）";
+    return copy;
+  }
+
+  function currentChoiceStage(event) {
+    if (!event || !event.choiceStages || !event.choiceStages.length) return null;
+    return event.choiceStages[event.choiceStageIndex || 0] || null;
+  }
+
+  function choiceById(event, id) {
+    var stage = currentChoiceStage(event);
+    if (!stage) return null;
+    var found = (stage.choices || []).find(function (choice) { return choice.id === id; });
+    return found ? enhancedChoice(found, event) : null;
+  }
+
+  function choicesComplete(event) {
+    return !event || !event.choiceStages || (event.choiceStageIndex || 0) >= event.choiceStages.length;
+  }
+
+  function effectiveChoiceCost(choice) {
+    var cost = Object.assign({}, choice.cost || {});
+    var tags = choiceTags(choice);
+    if ((Game.state.tagUse.圆滑 || 0) >= 5 && (tags.indexOf("圆滑") >= 0 || tags.indexOf("人情") >= 0) && cost.favor > 0) {
+      cost.favor = Math.max(0, cost.favor - 1);
+    }
+    return cost;
+  }
+
+  function canPayChoice(choice) {
+    var s = Game.state;
+    if (!choice) return false;
+    var cost = effectiveChoiceCost(choice);
+    if ((cost.energy || 0) > s.resources.energy) return false;
+    if ((cost.money || 0) > s.resources.money) return false;
+    if ((cost.favor || 0) > s.resources.favor) return false;
+    return true;
+  }
+
+  function payChoiceCost(choice) {
+    var cost = effectiveChoiceCost(choice);
+    Game.state.resources.energy -= cost.energy || 0;
+    Game.state.resources.money -= cost.money || 0;
+    Game.state.resources.favor -= cost.favor || 0;
+    Game.state.resources.pressure += cost.pressure || 0;
+  }
+
+  function choiceEffectPreview(choice) {
+    if (!choice) return [];
+    var effect = choice.effect || {};
+    var lines = [];
+    Object.keys(effect.tracks || {}).forEach(function (track) {
+      lines.push(track + " " + (effect.tracks[track] > 0 ? "+" : "") + effect.tracks[track]);
+    });
+    lines = lines
+      .concat(describeDeltas("", effect.resources || {}, mapResourceName))
+      .concat(describeDeltas("", effect.fame || {}, mapFameName))
+      .concat(describeDeltas("", effect.world || {}, mapWorldName));
+    Object.keys(effect.relations || {}).forEach(function (id) {
+      lines = lines.concat(describeDeltas(relationName(id) + "·", effect.relations[id], relationMetricName));
+    });
+    if (effect.addStain) lines.push("污点入档：《" + cardName(effect.addStain) + "》");
+    if (effect.addCard) lines.push("手段沉淀：《" + cardName(effect.addCard) + "》");
+    if (choice.libraryBonus) lines.push(choice.libraryBonus);
+    return lines.slice(0, 8);
+  }
+
+  function applyChoiceEffect(choice) {
+    var s = Game.state;
+    var event = s.currentEvent;
+    var effect = Game.Util.deepClone(choice.effect || {});
+    var notes = [];
+
+    applyTrackDeltas(choice, effect, notes);
+    applyDeltaBag(s.resources, effect.resources || {});
+    applyDeltaBag(s.fame, effect.fame || {});
+    applyDeltaBag(s.world, effect.world || {});
+    applyRelations(effect.relations || {});
+    applyNpcDeltas(effect.npcs || {}, notes);
+
+    Object.keys(effect.tags || {}).forEach(function (tag) {
+      s.tagUse[tag] = (s.tagUse[tag] || 0) + effect.tags[tag];
+    });
+    applyStyleMastery(choice, notes);
+
+    if (effect.addStain) {
+      Game.addNegativeCard(effect.addStain);
+      var stain = Game.cardById(effect.addStain);
+      notes.push("污点入档：" + (stain ? stain.name : effect.addStain));
+    }
+    if (effect.addCard) {
+      var added = Game.addCardToDiscard(effect.addCard);
+      if (added) notes.push("手段沉淀：" + added.name);
+    }
+
+    Object.keys(choice.setFlags || {}).forEach(function (flag) {
+      if (!event) return;
+      event.flags[flag] = (event.flags[flag] || 0) + choice.setFlags[flag];
+      notes.push("前置：" + flag);
+    });
+
+    if (choice.libraryBonus) notes.push(choice.libraryBonus);
+    notes = notes
+      .concat(describeDeltas("", effect.resources || {}, mapResourceName))
+      .concat(describeDeltas("", effect.fame || {}, mapFameName))
+      .concat(describeDeltas("", effect.world || {}, mapWorldName));
+
+    if (event) {
+      var stage = currentChoiceStage(event) || {};
+      event.played.push(choice.title);
+      event.choicesTaken.push(choice.id);
+      event.choiceLog.push({
+        stageId: stage.id || "",
+        stageTitle: stage.title || "",
+        title: choice.title,
+        body: choice.body || "",
+        outcomeText: choice.outcomeText || "",
+        notes: notes.slice()
+      });
+    }
+    Game.boundState();
+    return notes;
+  }
+
   function postEventWorldDrift(success) {
     var s = Game.state;
     if (success) {
@@ -1212,11 +1383,11 @@
     if (effect.addStain) {
       Game.addNegativeCard(effect.addStain);
       var card = Game.cardById(effect.addStain);
-      notes.push("污点入库：" + (card ? card.name : effect.addStain));
+      notes.push("污点入档：" + (card ? card.name : effect.addStain));
     }
     if (effect.addCard) {
       var added = Game.addCardToDiscard(effect.addCard);
-      if (added) notes.push("人情牌入库：《" + added.name + "》");
+      if (added) notes.push("手段沉淀：《" + added.name + "》");
     }
     if (effect.demote) {
       demoteCareer("君前疑忌与案牍失据", notes);
@@ -1279,14 +1450,10 @@
 
   function cardCounts(state) {
     var counts = {};
-    []
-      .concat(state.deck || [])
-      .concat(state.hand || [])
-      .concat(state.discard || [])
-      .concat(state.sealed || [])
-      .forEach(function (card) {
-        counts[card.id] = (counts[card.id] || 0) + 1;
-      });
+    var unlocked = state.actionLibrary && state.actionLibrary.unlocked || {};
+    Object.keys(unlocked).forEach(function (id) {
+      counts[id] = unlocked[id].level || 1;
+    });
     return counts;
   }
 
@@ -1438,7 +1605,7 @@
       return {
         id: id,
         label: card ? card.name : id,
-        type: stainOnly ? "污点" : card ? card.type : "牌",
+        type: stainOnly ? "污点" : card ? card.type : "手段",
         before: oldValue,
         after: newValue,
         delta: newValue - oldValue,
@@ -1471,7 +1638,7 @@
       var card = Game.cardById(draftId);
       var successEffect = { addCard: draftId, resources: {} };
       if (s.resources.pressure > 0) successEffect.resources.pressure = -1;
-      growth.push("案子收得稳，系统自动纳入《" + (card ? card.name : draftId) + "》，并稍减压力。");
+      growth.push("案子收得稳，自动沉淀《" + (card ? card.name : draftId) + "》式手段，并稍减压力。");
       var successNotes = applyRewardEffect(successEffect);
       notes.push("自动成长：" + successNotes.join("；"));
       return growth.concat(successNotes);
@@ -1579,7 +1746,6 @@
     s.eventHistory.push(event.id);
     pushStoryBeat(result.level, event.name, storyText);
     Game.addLog(event.name + "：" + text + " 余波：" + storyText);
-    Game.discardHand();
     if (shouldTriggerFatal(event, result)) {
       finishForcedEnding("old_case_prison", "旧案被政敌织成死局，君前疑忌已深，辩疏未入内阁便被封还。");
       Game.boundState();
@@ -1629,7 +1795,7 @@
     if (newOffice !== prevOffice) {
       Game.addOfficeCards(newOffice);
       var officeName = Game.getOffice().name;
-      Game.addLog("转任" + officeName + "，新的职责与牌池已经展开。");
+      Game.addLog("转任" + officeName + "，新的职责与手段库已经展开。");
     }
     tickRelationCooldowns();
     tickNpcCooldowns();
@@ -1672,9 +1838,9 @@
     var s = Game.state;
     var locked = s.ended || s.pendingSummary || s.pendingReward || !s.currentEvent || s.hasDrawn || s.preparedThisSeason;
     return [
-      { id: "contact", name: "托人探路", desc: "人情 -1，检索一张人情/关系牌。", disabled: locked || s.resources.favor < 1 },
-      { id: "evidence", name: "检旧档", desc: "银两 -1，检索一张法度/证据牌。", disabled: locked || s.resources.money < 1 },
-      { id: "pressure_draw", name: "连夜筹画", desc: "压力 +2，本季多抽 1 张。", disabled: locked },
+      { id: "contact", name: "托人探路", desc: "人情 -1，调动一项人情/关系手段。", disabled: locked || s.resources.favor < 1 },
+      { id: "evidence", name: "检旧档", desc: "银两 -1，调动一项法度/证据手段。", disabled: locked || s.resources.money < 1 },
+      { id: "pressure_draw", name: "连夜筹画", desc: "压力 +2，本季多一处铺垫余地。", disabled: locked },
       { id: "focus", name: "先定要害", desc: "压低最高关键阻力 1 点。", disabled: locked }
     ];
   };
@@ -1691,7 +1857,7 @@
         return item.type === "人情" || item.type === "家族" || cardHasAnyTag(item, ["人情", "同年", "师门", "圆滑"]);
       });
       if (card) s.hand.push(card);
-      Game.addLog(card ? "准备：托人探路，调来《" + card.name + "》。" : "准备：托人探路，却没有合适人情牌可调。");
+      Game.addLog(card ? "准备：托人探路，调动《" + card.name + "》。" : "准备：托人探路，却没有合适人情手段可调。");
     } else if (action === "evidence") {
       if (s.resources.money < 1) return false;
       s.resources.money -= 1;
@@ -1699,11 +1865,11 @@
         return item.type === "法度" || cardHasAnyTag(item, ["证据", "法度"]);
       });
       if (card) s.hand.push(card);
-      Game.addLog(card ? "准备：检旧档，调来《" + card.name + "》。" : "准备：检旧档，却没有合适证据牌可调。");
+      Game.addLog(card ? "准备：检旧档，调动《" + card.name + "》。" : "准备：检旧档，却没有合适证据手段可调。");
     } else if (action === "pressure_draw") {
       s.resources.pressure += 2;
       s.prepDrawBonus = (s.prepDrawBonus || 0) + 1;
-      Game.addLog("准备：连夜筹画，本季抽牌 +1，压力 +2。");
+      Game.addLog("准备：连夜筹画，本季处置余地 +1，压力 +2。");
     } else if (action === "focus") {
       var target = highestCriticalForPrepare(event);
       if (target && event.tracks[target.name]) {
@@ -1722,16 +1888,63 @@
     return true;
   };
 
+  Game.getCurrentChoiceStage = function () {
+    return currentChoiceStage(Game.state.currentEvent);
+  };
+
+  Game.currentEventChoicesComplete = function () {
+    return choicesComplete(Game.state.currentEvent);
+  };
+
+  Game.getCurrentChoices = function () {
+    var event = Game.state.currentEvent;
+    var stage = currentChoiceStage(event);
+    if (!stage) return [];
+    return (stage.choices || []).map(function (choice) {
+      return enhancedChoice(choice, event);
+    });
+  };
+
+  Game.getChoiceCost = effectiveChoiceCost;
+
+  Game.getChoiceThreat = function (choice) {
+    return computeThreatGain(choice);
+  };
+
+  Game.getChoicePreview = choiceEffectPreview;
+
+  Game.canChooseChoice = function (choiceOrId) {
+    if (Game.state.pendingReward || Game.state.pendingSummary || Game.state.ended || !Game.state.currentEvent) return false;
+    var choice = typeof choiceOrId === "string" ? choiceById(Game.state.currentEvent, choiceOrId) : choiceOrId;
+    return canPayChoice(choice);
+  };
+
+  Game.chooseChoice = function (choiceId) {
+    var event = Game.state.currentEvent;
+    if (Game.state.pendingReward || Game.state.pendingSummary || Game.state.ended || !event) return false;
+    var choice = choiceById(event, choiceId);
+    if (!choice || !canPayChoice(choice)) return false;
+    payChoiceCost(choice);
+    var notes = applyChoiceEffect(choice);
+    event.playCount += 1;
+    event.choiceStageIndex = Math.min((event.choiceStageIndex || 0) + 1, (event.choiceStages || []).length);
+    Game.addLog("处置《" + event.name + "》：" + choice.title + "。" + (notes.length ? " " + notes.join("；") : ""));
+    triggerReaction(choice);
+    Game.boundState();
+    refreshRelationWarnings();
+    return true;
+  };
+
   Game.getDominantStyle = dominantStyle;
 
   Game.getStylePerks = function () {
     var tagUse = Game.state.tagUse || {};
     return [
-      { tag: "圆滑", threshold: 5, text: "人情/圆滑牌人情费用 -1，出牌时缓和政敌怨恨。" },
-      { tag: "清流", threshold: 6, text: "清流/清议牌额外压一处舆论阻力，但皇帝猜忌 +1。" },
-      { tag: "能吏", threshold: 6, text: "政务/法度牌额外压最高关键阻力，压力 +1。" },
-      { tag: "权谋", threshold: 5, text: "权谋牌额外处理反扑或上意，压力 +1。" },
-      { tag: "仁政", threshold: 5, text: "仁政牌民心 +1，但财政健康 -1。" }
+      { tag: "圆滑", threshold: 5, text: "人情/圆滑处置的人情费用 -1，处置时缓和政敌怨恨。" },
+      { tag: "清流", threshold: 6, text: "清流/清议处置额外压一处舆论阻力，但皇帝猜忌 +1。" },
+      { tag: "能吏", threshold: 6, text: "政务/法度处置额外压最高关键阻力，压力 +1。" },
+      { tag: "权谋", threshold: 5, text: "权谋处置额外处理反扑或上意，压力 +1。" },
+      { tag: "仁政", threshold: 5, text: "仁政处置民心 +1，但财政健康 -1。" }
     ].map(function (perk) {
       perk.value = tagUse[perk.tag] || 0;
       perk.active = perk.value >= perk.threshold;
@@ -1833,7 +2046,7 @@
     if (!card) return false;
     s.keptCard = card;
     s.selectedForExchange = (s.selectedForExchange || []).filter(function (id) { return id !== instanceId; });
-    Game.addLog("保留《" + card.name + "》，下季仍可使用。");
+    Game.addLog("暂存《" + card.name + "》，下季仍可转化为处置。");
     return true;
   };
 
@@ -1875,6 +2088,10 @@
 
   Game.endQuarter = function () {
     if (Game.state.pendingReward || Game.state.pendingSummary || Game.state.ended) return false;
+    if (Game.state.currentEvent && !choicesComplete(Game.state.currentEvent)) {
+      Game.addLog("此事尚未定案，需先完成当前处置阶段。");
+      return false;
+    }
     resolveCurrentEvent();
     return true;
   };
