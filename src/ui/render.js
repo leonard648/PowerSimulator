@@ -542,6 +542,23 @@
     }).join("");
   }
 
+  function renderChoiceResources() {
+    var resources = Game.state.resources || {};
+    var items = [
+      { key: "energy", label: "精力", short: "精", value: resources.energy || 0, max: 8, reverse: false },
+      { key: "money", label: "银两", short: "银", value: resources.money || 0, max: 12, reverse: false },
+      { key: "favor", label: "人情", short: "情", value: resources.favor || 0, max: 12, reverse: false },
+      { key: "pressure", label: "压力", short: "压", value: resources.pressure || 0, max: 20, reverse: true }
+    ];
+    return '<div class="choice-resource-strip" aria-label="当前资源">' + items.map(function (item) {
+      var help = helpAttributes("resource", item.key);
+      return '<div class="choice-resource choice-resource--' + item.key + '" role="button" tabindex="0"' + help + '>' +
+        '<span class="choice-resource-mark">' + escapeHtml(item.short) + '</span>' +
+        '<div class="choice-resource-main"><b>' + escapeHtml(item.label) + " " + escapeHtml(item.value) + '</b>' + bar(item.value, item.max, item.reverse) + '</div>' +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
   function renderTime() {
     var s = Game.state;
     var office = Game.getOffice();
@@ -567,12 +584,6 @@
     var attrHtml = Object.keys(s.attributes).map(function (key) {
       return statBlock(key, s.attributes[key], 10, false, "attribute", key);
     }).join("");
-    var resHtml = [
-      statBlock("精力", s.resources.energy, 8, false, "resource", "energy"),
-      statBlock("银两", s.resources.money, 12, false, "resource", "money"),
-      statBlock("人情", s.resources.favor, 12, false, "resource", "favor"),
-      statBlock("压力", s.resources.pressure, 20, true, "resource", "pressure")
-    ].join("");
     var fameHtml = [
       statBlock("清名", s.fame.clean, 20, false, "fame", "clean"),
       statBlock("能名", s.fame.competence, 20, false, "fame", "competence"),
@@ -596,7 +607,6 @@
       styleHtml +
       perkHtml +
       '<div class="section"><div class="panel-title">属性</div><div class="stat-grid">' + attrHtml + '</div></div>' +
-      '<div class="section"><div class="panel-title">资源</div><div class="resource-grid">' + resHtml + '</div></div>' +
       '<div class="section"><div class="panel-title">名声</div><div class="resource-grid">' + fameHtml + '</div></div>' +
       '<div class="section"><div class="panel-title">污点</div><div class="tags">' + (s.stains.length ? s.stains.map(function (id) {
         var card = Game.cardById(id);
@@ -672,8 +682,9 @@
     var locked = s.ended || !!s.pendingReward || !!s.pendingSummary;
     var stage = Game.getCurrentChoiceStage ? Game.getCurrentChoiceStage() : null;
     var complete = Game.currentEventChoicesComplete ? Game.currentEventChoicesComplete() : false;
-    el("hand-hint").innerHTML = (s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : complete ? "本季处置已完成，可以结束本季结案。" : stage ? "选择一项处置推进当前事务。费用不足的选项会变暗。" : "暂无可处置事务。") +
-      ' <span class="cost-legend"><span>精=精力</span><span>银=银两</span><span>情=人情</span><span>压=压力</span></span>';
+    el("hand-hint").innerHTML = '<p>' + escapeHtml(s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : complete ? "本季处置已完成，可以结束本季结案。" : stage ? "选择一项处置推进当前事务。费用不足的选项会变暗。" : "暂无可处置事务。") +
+      ' <span class="cost-legend"><span>精=精力</span><span>银=银两</span><span>情=人情</span><span>压=压力</span></span></p>' +
+      renderChoiceResources();
     el("end-button").disabled = locked || !s.currentEvent || !complete;
     if (!s.currentEvent || locked) {
       el("hand-panel").innerHTML = '<div class="choices-empty"><p class="muted">' + (locked ? "本季事务已进入结算。" : "暂无事务。") + '</p></div>';
@@ -721,6 +732,13 @@
         '</article>';
     }).join("");
     el("hand-panel").innerHTML = choiceLog + stageInfo + '<div class="cards choice-grid">' + (html || '<p class="muted">当前阶段没有可选处置。</p>') + '</div>';
+    if ((s.currentEvent.choiceStageIndex || 0) > 0) {
+      var handScroller = el("hand-panel");
+      var choiceGrid = handScroller.querySelector(".choice-grid");
+      if (choiceGrid) {
+        handScroller.scrollTop = Math.max(0, choiceGrid.offsetTop - 8);
+      }
+    }
     Array.prototype.forEach.call(document.querySelectorAll("[data-choice]"), function (button) {
       button.addEventListener("click", function () {
         Game.chooseChoice(button.getAttribute("data-choice"));
