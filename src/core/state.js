@@ -1,7 +1,7 @@
 (function () {
   window.Game = window.Game || {};
 
-  var SAVE_KEY = "bureaucracy_deckbuilder_demo_save";
+  var SAVE_KEY = "wanli_zhang_juzheng_save_v1";
 
   function deepClone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -13,14 +13,14 @@
 
   function createRelations() {
     return {
-      emperor: { trust: 6, suspicion: 3, closeness: 0, resentment: 0, fear: 0, debt: 0 },
-      mentor: { trust: 5, closeness: 4, resentment: 0, fear: 0, debt: 0 },
-      peers: { trust: 4, closeness: 4, resentment: 0, fear: 0, debt: 0 },
-      gentry: { trust: 3, closeness: 3, resentment: 1, fear: 0, debt: 0 },
-      clerks: { trust: 3, closeness: 2, resentment: 1, fear: 1, debt: 0 },
-      superior: { trust: 4, closeness: 2, resentment: 0, fear: 0, debt: 0 },
-      rival: { trust: 0, closeness: 0, resentment: 3, fear: 0, debt: 0 },
-      scholars: { trust: 4, closeness: 4, resentment: 0, fear: 0, debt: 0 }
+      emperor: { trust: 8, suspicion: 2, closeness: 4, resentment: 0, fear: 0, debt: 0 },
+      mentor: { trust: 8, closeness: 6, resentment: 0, fear: 0, debt: 1 },
+      peers: { trust: 5, closeness: 4, resentment: 1, fear: 0, debt: 0 },
+      gentry: { trust: 2, closeness: 2, resentment: 4, fear: 1, debt: 0 },
+      clerks: { trust: 4, closeness: 2, resentment: 2, fear: 3, debt: 0 },
+      superior: { trust: 5, closeness: 5, resentment: 0, fear: 0, debt: 2 },
+      rival: { trust: 0, closeness: 0, resentment: 6, fear: 1, debt: 0 },
+      scholars: { trust: 4, closeness: 3, resentment: 3, fear: 0, debt: 0 }
     };
   }
 
@@ -101,7 +101,7 @@
       .concat(cardIdsFromZone(loaded.keptCard ? [loaded.keptCard] : []));
     var library = loaded.actionLibrary || null;
     if (!library || !library.unlocked) {
-      library = createActionLibrary(ids.length ? ids : STARTING_ACTION_IDS, ids.length ? "旧存档迁移" : "入仕根基");
+      library = createActionLibrary(ids.length ? ids : STARTING_ACTION_IDS, ids.length ? "旧存档迁移" : "辅政根基");
     } else {
       library.unlocked = library.unlocked || {};
       library.routes = library.routes || [];
@@ -163,15 +163,34 @@
   }
 
   function inferOfficeId(year) {
-    if (year <= 4) return "hanlin";
-    if (year <= 8) return "county";
+    var phases = GameData.timeline && GameData.timeline.phases || [];
+    var numericYear = Math.max(1, year || 1);
+    var match = phases.find(function (phase) {
+      return numericYear >= phase.startYear && numericYear <= phase.endYear;
+    });
+    if (match && match.officeId) return match.officeId;
+    if (numericYear <= 2) return "hanlin";
+    if (numericYear <= 7) return "county";
     return "censor";
   }
 
   function inferMerit(year, officeId) {
-    if (officeId === "censor") return 64;
-    if (officeId === "county") return Math.max(28, (year - 4) * 7);
-    return Math.max(0, (year - 1) * 5);
+    return Math.max(0, (year || 1) - 1);
+  }
+
+  function timelineOfficeIdsThrough(year) {
+    var phases = GameData.timeline && GameData.timeline.phases || [];
+    if (!phases.length) {
+      var officeId = inferOfficeId(year || 1);
+      return officeId === "censor" ? ["hanlin", "county", "censor"] : officeId === "county" ? ["hanlin", "county"] : ["hanlin"];
+    }
+    return phases.filter(function (phase) {
+      return (year || 1) >= phase.startYear;
+    }).map(function (phase) {
+      return phase.officeId;
+    }).filter(function (id, index, list) {
+      return id && list.indexOf(id) === index;
+    });
   }
 
   function createCareer(year) {
@@ -181,18 +200,19 @@
       officeId: officeId,
       merit: inferMerit(year || 1, officeId),
       rankName: office.rankName || office.name,
-      unlockedOffices: officeId === "censor" ? ["hanlin", "county", "censor"] : officeId === "county" ? ["hanlin", "county"] : ["hanlin"],
+      unlockedOffices: timelineOfficeIdsThrough(year || 1),
       history: []
     };
   }
 
   function normalizeCareer(career, year) {
     var result = career || createCareer(year || 1);
-    var office = officeById(result.officeId || inferOfficeId(year || 1));
+    var inferredOfficeId = inferOfficeId(year || 1);
+    var office = officeById(inferredOfficeId || result.officeId);
     result.officeId = office.id;
     result.merit = typeof result.merit === "number" ? result.merit : inferMerit(year || 1, office.id);
-    result.rankName = result.rankName || office.rankName || office.name;
-    result.unlockedOffices = result.unlockedOffices || (office.id === "censor" ? ["hanlin", "county", "censor"] : office.id === "county" ? ["hanlin", "county"] : ["hanlin"]);
+    result.rankName = office.rankName || office.name;
+    result.unlockedOffices = timelineOfficeIdsThrough(year || 1);
     result.history = result.history || [];
     return result;
   }
@@ -245,7 +265,7 @@
   Game.createNewState = function () {
     return {
       year: 1,
-      age: 24,
+      age: GameData.player && GameData.player.startAge || 48,
       seasonIndex: 0,
       career: createCareer(1),
       currentEvent: null,
@@ -255,39 +275,39 @@
       prepDrawBonus: 0,
       ended: false,
       resources: {
-        energy: 4,
-        money: 3,
-        favor: 2,
+        energy: 5,
+        money: 4,
+        favor: 4,
         pressure: 0
       },
       attributes: {
-        才学: 6,
-        政务: 4,
-        权谋: 3,
-        口才: 5,
-        操守: 5,
+        才学: 8,
+        政务: 8,
+        权谋: 7,
+        口才: 7,
+        操守: 6,
         体魄: 4
       },
-      traits: ["刚直", "惜名"],
+      traits: ["综核名实", "刚毅任事"],
       fame: {
-        clean: 3,
-        competence: 2,
-        literary: 3,
-        power: 0,
+        clean: 5,
+        competence: 8,
+        literary: 7,
+        power: 7,
         cruel: 0,
-        corruption: 0
+        corruption: 1
       },
       world: {
-        emperorTrust: 6,
-        scholarOpinion: 6,
+        emperorTrust: 8,
+        scholarOpinion: 5,
         publicMood: 6,
-        fiscalHealth: 5,
-        factionHeat: 4,
-        courtPressure: 4
+        fiscalHealth: 4,
+        factionHeat: 6,
+        courtPressure: 6
       },
       relations: createRelations(),
       npcs: createNpcs(),
-      actionLibrary: createActionLibrary(STARTING_ACTION_IDS, "入仕根基"),
+      actionLibrary: createActionLibrary(STARTING_ACTION_IDS, "辅政根基"),
       deck: [],
       hand: [],
       discard: [],
@@ -333,7 +353,7 @@
           level: loaded.pendingReward.level || "partial",
           title: loaded.pendingReward.title || "旧档结案",
           resultText: loaded.pendingReward.text || "此存档停在旧版结案状态。新版已改为结案总结，可直接进入下一季。",
-          story: loaded.pendingReward.story || "旧日案卷已归档，余波照旧写入仕途。",
+          story: loaded.pendingReward.story || "旧日案卷已归档，余波照旧写入新政。",
           trackSummary: { critical: [], blocked: [], unresolved: [] },
           deltaGroups: [],
           npcBeats: [],
@@ -386,7 +406,7 @@
     var office = Game.getOffice ? Game.getOffice().name : "";
     var season = GameData.seasons[s.seasonIndex] || "";
     s.log.unshift({
-      time: "第" + s.year + "年" + season + "·" + office,
+      time: (Game.timelineYearLabel ? Game.timelineYearLabel(s.year) : "第" + s.year + "年") + season + "·" + office,
       text: text
     });
     s.log = s.log.slice(0, 80);
@@ -407,6 +427,7 @@
     s.resources.favor = clamp(s.resources.favor, 0, 12);
     s.resources.pressure = clamp(s.resources.pressure, 0, 20);
     s.actionLibrary = normalizeActionLibrary(s);
+    s.career = normalizeCareer(s.career, s.year || 1);
     s.ailments = s.ailments || [];
     Object.keys(s.world).forEach(function (key) {
       s.world[key] = clamp(s.world[key], 0, 20);

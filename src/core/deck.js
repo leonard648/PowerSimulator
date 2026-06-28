@@ -82,40 +82,40 @@
     county: [
       {
         id: "county_accounts",
-        name: "清账能吏",
-        desc: "压钱粮、证据与流程，适合把地方治理做成账面实绩。",
+        name: "清丈财赋",
+        desc: "围绕清丈田亩、钱粮稽核与一条鞭法，推动国用转稳。",
         cards: ["audit_accounts", "survey_fields", "seal_grain", "commercial_tax", "borrow_treasury"]
       },
       {
         id: "county_benevolent",
-        name: "仁政地方",
-        desc: "照顾民心与灾荒，升迁慢些，但地方评价更稳。",
+        name: "河工赈济",
+        desc: "把治河、水利与民生安抚纳入新政，减少地方反噬。",
         cards: ["open_granary", "repair_waterworks", "comfort_people", "village_covenant", "public_works"]
       },
       {
         id: "county_control",
-        name: "胥吏控局",
-        desc: "用属吏、士绅和惩戒手段压住现场，短期效率更高。",
+        name: "边防考成",
+        desc: "以考成、边饷和部院督责压住执行链，短期效率更高。",
         cards: ["banquet_gentry", "strict_interrogation", "protect_subordinate", "scapegoat_clerk", "hire_adviser"]
       }
     ],
     censor: [
       {
         id: "censor_law",
-        name: "据法弹章",
-        desc: "强化证据、质证与成例，适合走能吏御史。",
+        name: "帝心维系",
+        desc: "以奏对、御前证据与成例稳住万历信任，压低转冷风险。",
         cards: ["impeach_unlawful", "cross_examine", "evidence_chain", "joint_review", "summon_witness"]
       },
       {
         id: "censor_public",
-        name: "清议正声",
-        desc: "借士林与名节开路，能得清名，也更刺眼。",
+        name: "言路应对",
+        desc: "处理言官弹劾与士林清议，能保名声，也更刺眼。",
         cards: ["public_petition", "resign_for_principle", "chain_memorial", "public_repute", "wind_hearsay"]
       },
       {
         id: "censor_shadow",
-        name: "宫门暗线",
-        desc: "以内廷消息和把柄处理反扑，权力更近，污点也更近。",
+        name: "身后保全",
+        desc: "以内廷消息、把柄与冷处理预备清算风险，权力更近，污点也更近。",
         cards: ["secret_memorial", "withhold_dossier", "seek_inner_tip", "watch_in_silence", "turn_reaction"]
       }
     ]
@@ -165,7 +165,7 @@
       "archive_search", "seal_document", "family_support", "marriage_plea",
       "ritual_poem", "educate_heir", "copy_classics", "private_warning", "medical_rest"
     ];
-    Game.state.actionLibrary = Game.createActionLibrary ? Game.createActionLibrary(baseIds, "入仕根基") : { unlocked: {}, routes: [] };
+    Game.state.actionLibrary = Game.createActionLibrary ? Game.createActionLibrary(baseIds, "辅政根基") : { unlocked: {}, routes: [] };
     Game.state.deck = [];
     Game.state.hand = [];
     Game.state.discard = [];
@@ -183,8 +183,10 @@
   };
 
   Game.addOfficeCards = function (officeId, selectedIds) {
+    Game.state.flags = Game.state.flags || {};
+    Game.state.flags["phase_cards_" + officeId] = 1;
     validIds(selectedIds && selectedIds.length ? selectedIds : officeCardPools[officeId]).forEach(function (id) {
-      unlockAction(id, Game.getOfficeById ? ("转任" + Game.getOfficeById(officeId).name) : "转任新职");
+      unlockAction(id, Game.getOfficeById ? ("阶段展开：" + Game.getOfficeById(officeId).name) : "阶段展开");
     });
   };
 
@@ -206,7 +208,7 @@
     if (!draft || !draft.packages || !draft.packages[index]) return false;
     var pack = draft.packages[index];
     Game.addOfficeCards(draft.officeId, pack.cards);
-    Game.addLog("升迁择路：" + pack.name + "写入手段库。");
+    Game.addLog("阶段择策：" + pack.name + "写入手段库。");
     Game.state.pendingOfficeDraft = null;
     return true;
   };

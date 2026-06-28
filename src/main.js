@@ -4,7 +4,7 @@
     Game.state = loaded || Game.createNewState();
     if (!loaded || !Game.state.actionLibrary || !Object.keys(Game.state.actionLibrary.unlocked || {}).length) {
       Game.buildStartingDeck();
-      Game.addLog("新科进士入仕，授翰林清职。");
+      Game.addLog(GameData.player && GameData.player.startLog || "万历元年，张居正奉遗诏辅政。");
     }
     if (!Game.state.currentEvent && !Game.state.pendingReward && !Game.state.pendingSummary && !Game.state.ended) {
       Game.startEvent();
@@ -20,7 +20,7 @@
     Game.clearSave();
     Game.state = Game.createNewState();
     Game.buildStartingDeck();
-    Game.addLog("新科进士入仕，授翰林清职。");
+    Game.addLog(GameData.player && GameData.player.startLog || "万历元年，张居正奉遗诏辅政。");
     Game.startEvent();
     Game.UI.render();
   };

@@ -89,33 +89,33 @@
       体魄: { group: "属性", desc: "熬夜办案、休养和压力管理的个人底色。", impact: ["对应体魄处置，常与压力、期限、心病相关。", "当前版本不直接按属性高低改判定，压力系统才会影响下季精力。"], changedBy: ["开局人物设定；后续属性成长尚未开放。"], max: 10 }
     },
     resource: {
-      energy: { group: "资源", title: "精力", desc: "本季处置事务的主要行动点。", impact: ["支付大多数处置费用；不足时许多选项不能使用。", "每季按官职刷新，压力过高会压低下季精力。"], changedBy: ["新季刷新、事务处置和结算奖励。"], max: 8 },
+      energy: { group: "资源", title: "精力", desc: "本季处置事务的主要行动点。", impact: ["支付大多数处置费用；不足时许多选项不能使用。", "每季按阶段刷新，压力过高会压低下季精力。"], changedBy: ["新季刷新、事务处置和结算奖励。"], max: 8 },
       money: { group: "资源", title: "银两", desc: "用于钱粮、打点、工程和查旧档。", impact: ["支付财政、工程、人情类处置费用。", "部分铺垫和暗线处置需要银两。"], changedBy: ["年末自然 +1、事务处置和结算奖励。"], max: 12 },
-      favor: { group: "资源", title: "人情", desc: "可动用的人脉余量。", impact: ["支付人情、同年、师门、证人等处置费用。", "圆滑路线成熟后可降低部分人情费用。"], changedBy: ["年末自然 +1、关系处置和结算奖励。"], max: 12 },
-      pressure: { group: "资源", title: "压力", desc: "仕途和身体的负担。", impact: ["压力 >=8 时，结案后可能留下心病。", "压力 >=10/15 会分别让下季精力额外 -1。", "压力很高且清名较高时，可能走向退而著书的结局。"], changedBy: ["失败后患、冒险处置、连夜筹画、休养和部分沉淀奖励。"], max: 20, reverse: true }
+      favor: { group: "资源", title: "人情", desc: "可动用的人脉余量。", impact: ["支付内廷、阁臣、部院、证人等处置费用。", "圆滑路线成熟后可降低部分人情费用。"], changedBy: ["年末自然 +1、关系处置和结算奖励。"], max: 12 },
+      pressure: { group: "资源", title: "压力", desc: "新政、朝局和身体的负担。", impact: ["压力 >=8 时，结案后可能留下心病。", "压力 >=10/15 会分别让下季精力额外 -1。", "压力很高且清名较高时，可能走向积劳与身后追思。"], changedBy: ["失败后患、冒险处置、连夜筹画、休养和部分沉淀奖励。"], max: 20, reverse: true }
     },
     fame: {
       clean: { group: "名声", title: "清名", desc: "外界认为你是否清正自持。", impact: ["清名高且污点少，容易走向清节留名结局。", "清名会被拒贿、清议、仁政提高，也会被污点和交易损伤。"], changedBy: ["清流/仁政/操守处置、事务结算、污点和失败后患。"], max: 20 },
-      competence: { group: "名声", title: "能名", desc: "外界认为你是否能办成事。", impact: ["能名高且贪名不高，容易走向能臣干吏结局。", "成功结案通常会增加能名，治安、流程、钱粮失败会损伤能名。"], changedBy: ["政务/法度/财政处置、成功结案、事件后患。"], max: 20 },
-      literary: { group: "名声", title: "文名", desc: "馆阁文章、经义和诗文名望。", impact: ["影响生平评价和翰林阶段的叙事重心。", "文名不足、文辞未备等后患会压低它。"], changedBy: ["讲学、诗文、诏书类处置，相关事件后患。"], max: 20 },
-      power: { group: "名声", title: "权名", desc: "外界认为你是否有权势与门路。", impact: ["权名 >=8 后，每年会让朋党烈度更容易上升。", "权名很高且污点多，可能走向权倾后被清算的结局。"], changedBy: ["权谋、密折、弹劾、门生和反制类处置。"], max: 20 },
-      cruel: { group: "名声", title: "酷名", desc: "外界认为你是否苛急严酷。", impact: ["酷名 >=8 会导向酷吏干才结局。", "短期常能压案，长期会伤民心和史评。"], changedBy: ["严刑、推出胥吏、威势压服等选择。"], max: 20, reverse: true },
-      corruption: { group: "名声", title: "贪名", desc: "外界认为你是否染上财货和灰色交易。", impact: ["贪名高会污染清名路线。", "贪名 >=9 且皇帝信任仍高，可能走向贪名难洗但苟全的结局。"], changedBy: ["遮掩亏空、收受交易、污点和失败后患。"], max: 20, reverse: true }
+      competence: { group: "名声", title: "政绩", desc: "外界认为新政是否真正办成事。", impact: ["政绩高且贪名不高，容易走向综核名实的评价。", "成功结案通常会增加政绩，考成、财赋、河工失败会损伤政绩。"], changedBy: ["政务/法度/财政处置、成功结案、事件后患。"], max: 20 },
+      literary: { group: "名声", title: "经术声望", desc: "经筵讲读、经义文章和奏疏声望。", impact: ["影响生平评价和帝师阶段的叙事重心。", "经术声望不足、文辞未备等后患会压低它。"], changedBy: ["经筵、诗文、诏书类处置，相关事件后患。"], max: 20 },
+      power: { group: "名声", title: "权势", desc: "外界认为你是否权重中枢、门路深厚。", impact: ["权势 >=8 后，每年会让反张声势更容易上升。", "权势很高且污点多，可能走向身后籍没。"], changedBy: ["权谋、密折、弹劾、门生和反制类处置。"], max: 20 },
+      cruel: { group: "名声", title: "酷名", desc: "外界认为你是否苛急严酷。", impact: ["酷名 >=8 会导向峻急考成结局。", "短期常能压案，长期会伤民心和史评。"], changedBy: ["严责、推出部院替罪、威势压服等选择。"], max: 20, reverse: true },
+      corruption: { group: "名声", title: "贪名", desc: "外界认为你是否染上财货和灰色交易。", impact: ["贪名高会污染清名路线。", "贪名 >=9 且万历信任仍高，可能走向贪名难洗但暂得保全。"], changedBy: ["遮掩亏空、收受交易、污点和失败后患。"], max: 20, reverse: true }
     },
     world: {
-      emperorTrust: { group: "朝局", title: "皇帝信任", desc: "君前对你的可用与可信程度。", impact: ["过低会让朱批疑云、旧案死局等风险更近。", "较高可触发密旨试探等机会，也能支撑部分灰色结局。"], changedBy: ["近君、密折、据实上报、清议过火和事件结算。"], max: 20 },
-      scholarOpinion: { group: "朝局", title: "士林评价", desc: "书院、公论和清议圈对你的评价。", impact: ["高士林评价会给清议拥戴和党祸身后名的可能。", "过低会触发公论反噬，清名更容易受损。"], changedBy: ["讲学、联署、清流处置、密折暗线、流言后患。"], max: 20 },
+      emperorTrust: { group: "朝局", title: "万历信任", desc: "万历帝对你的可用与可信程度。", impact: ["过低会让御批转冷、旧案死局等风险更近。", "较高可触发宫中密议等机会，也能支撑部分灰色结局。"], changedBy: ["经筵、密折、据实上报、清议过火和事件结算。"], max: 20 },
+      scholarOpinion: { group: "朝局", title: "士林清议", desc: "书院、公论和清议圈对你的评价。", impact: ["高士林清议会替新政说话，也可能让君前疑你名重。", "过低会触发公论反噬，清名更容易受损。"], changedBy: ["讲学、联署、清流处置、密折暗线、流言后患。"], max: 20 },
       publicMood: { group: "朝局", title: "民心", desc: "地方百姓对官府处置的感受。", impact: ["民心高且仁政路线足，可能走向救荒有功结局。", "民心低会让灾情、治安、催科类后患更刺眼。"], changedBy: ["赈济、水利、缓征、严刑、商税和灾情后患。"], max: 20 },
-      fiscalHealth: { group: "朝局", title: "财政健康", desc: "钱粮和库藏是否稳。", impact: ["财政健康低意味着钱粮后患更重，治理叙事更容易被亏空牵住。", "财政健康高能支撑能吏路线和地方治理。"], changedBy: ["清丈、商税、裁撤冗费、赈济、工程和亏空后患。"], max: 20 },
-      factionHeat: { group: "朝局", title: "朋党烈度", desc: "朝中派系互相借题发挥的热度。", impact: ["烈度高意味着派系阻挠、朋党反扑和政敌动作更危险。", "权名 >=8 时，年末会推高朋党烈度。"], changedBy: ["失败后患、权谋操作、延议冷处理、离间朋党。"], max: 20, reverse: true },
+      fiscalHealth: { group: "朝局", title: "国用充实", desc: "钱粮、库藏和新政财政是否稳。", impact: ["国用充实低意味着财赋后患更重，新政叙事更容易被亏空牵住。", "国用充实高能支撑考成、河工与边防。"], changedBy: ["清丈、商税、裁撤冗费、赈济、工程和亏空后患。"], max: 20 },
+      factionHeat: { group: "朝局", title: "反张声势", desc: "朝中反对张居正新政的合流程度。", impact: ["声势高意味着言官弹劾、旧政罗织和身后清算更危险。", "权势 >=8 时，年末会推高反张声势。"], changedBy: ["失败后患、权谋操作、延议冷处理、离间朋党。"], max: 20, reverse: true },
       courtPressure: { group: "朝局", title: "朝局压力", desc: "中枢流程、追责和案牍堆积造成的总压力。", impact: ["成功结案会降低它，失败会抬高它。", "它代表朝廷层面的紧绷感，会在总结里进入朝局变化。"], changedBy: ["结案成败、流程迟滞、案卷迟滞、成例压案和严行考成。"], max: 20, reverse: true }
     },
     relation: {
-      trust: { group: "关系", title: "信任", desc: "对方相信你能办事、守约或可用。", impact: ["信任或亲近很高时会标记为助力。", "皇帝信任高可带来密旨机会；上司信任高更利于考成叙事。"], changedBy: ["相关人物处置、NPC 事件、成功或失败结算。"], max: 20 },
+      trust: { group: "关系", title: "信任", desc: "对方相信你能办事、守约或可用。", impact: ["信任或亲近很高时会标记为助力。", "万历信任高可带来宫中密议；部院信任高更利于考成叙事。"], changedBy: ["相关人物处置、NPC 事件、成功或失败结算。"], max: 20 },
       suspicion: { group: "关系", title: "猜忌", desc: "主要用于皇帝关系，表示君前疑心。", impact: ["猜忌高会触发朱批疑云。", "皇帝猜忌极高且政敌怨恨深时，旧案可能变成死局。"], changedBy: ["清议过火、御前失分、密折暗线、成功辩清。"], max: 20, reverse: true },
-      closeness: { group: "关系", title: "亲近", desc: "师门、同年、士林、地方等与你的距离。", impact: ["亲近高可成为助力，带来人情和事件机会。", "士林亲近高会推动清议拥戴。"], changedBy: ["拜访、转圜、交易、相助和 NPC 事件。"], max: 20 },
-      debt: { group: "关系", title: "亏欠", desc: "你欠下的人情账。", impact: ["亏欠高会标记为牵连。", "师门或同年亏欠高，会触发师门逼请一类事件。"], changedBy: ["请托、交易、受援、偿还恩义和结算。"], max: 20, reverse: true },
-      resentment: { group: "关系", title: "怨恨", desc: "对方记下的旧账和敌意。", impact: ["怨恨高会标记为危险，并触发关系事件。", "政敌怨恨极高会把旧案推向清算风险。"], changedBy: ["强硬处置、得罪地方/胥吏/政敌、失败后患和缓和类处置。"], max: 20, reverse: true },
+      closeness: { group: "关系", title: "亲近", desc: "内廷、阁臣、士林、地方等与你的距离。", impact: ["亲近高可成为助力，带来人情和事件机会。", "士林亲近高会推动清议拥戴。"], changedBy: ["拜访、转圜、交易、相助和 NPC 事件。"], max: 20 },
+      debt: { group: "关系", title: "亏欠", desc: "你欠下的人情账。", impact: ["亏欠高会标记为牵连。", "内廷、阁臣或家门亏欠高，会触发逼请与牵连事件。"], changedBy: ["请托、交易、受援、偿还恩义和结算。"], max: 20, reverse: true },
+      resentment: { group: "关系", title: "怨恨", desc: "对方记下的旧账和敌意。", impact: ["怨恨高会标记为危险，并触发关系事件。", "政敌言官怨恨极高会把旧案推向清算风险。"], changedBy: ["强硬处置、得罪地方/部院/政敌、失败后患和缓和类处置。"], max: 20, reverse: true },
       fear: { group: "关系", title: "畏惧", desc: "对方因你的手段或把柄而不敢轻动。", impact: ["畏惧可暂时形成威慑，算作一种强关系。", "畏惧不是信任，常伴随酷名、权谋或后续怨恨。"], changedBy: ["查封、严刑、把柄、反制和成功压服。"], max: 20 }
     }
   };
@@ -287,7 +287,7 @@
 
   function cleanSummaryResultText(text) {
     return String(text || "")
-      .replace(/\s*仕途结算：[^。]*。?/g, "")
+      .replace(/\s*新政结算：[^。]*。?/g, "")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -334,8 +334,8 @@
   function changePhrase(groupTitle, item) {
     var label = item.label || "";
     var delta = item.delta || 0;
-    if (item.text && label === "官职") return "官职转入" + (item.afterText || item.text.replace(/.*→\s*/, ""));
-    if (label === "官评") return delta > 0 ? "官评更稳" : "官评受挫";
+    if (item.text && label === "阶段") return "阶段转入" + (item.afterText || item.text.replace(/.*→\s*/, ""));
+    if (label === "新政威望") return delta > 0 ? "新政威望更稳" : "新政威望受挫";
 
     if (groupTitle === "资源") {
       if (label === "精力") return delta > 0 ? "精力得到回补" : "精力被耗去";
@@ -346,19 +346,19 @@
 
     if (groupTitle === "名声") {
       if (label === "清名") return delta > 0 ? "清名更显" : "清名受损";
-      if (label === "能名") return delta > 0 ? "能名更足" : "能名受挫";
-      if (label === "文名") return delta > 0 ? "文名更盛" : "文名暗淡";
-      if (label === "权名") return delta > 0 ? "权名更重" : "权名收敛";
+      if (label === "政绩") return delta > 0 ? "政绩更足" : "政绩受挫";
+      if (label === "经术声望") return delta > 0 ? "经术声望更盛" : "经术声望暗淡";
+      if (label === "权势") return delta > 0 ? "权势更重" : "权势收敛";
       if (label === "酷名") return delta > 0 ? "酷名更重" : "酷名稍退";
       if (label === "贪名") return delta > 0 ? "贪名更露" : "贪名稍洗";
     }
 
     if (groupTitle === "朝局") {
-      if (label === "皇帝信任") return delta > 0 ? "上意稍近" : "上意转冷";
-      if (label === "士林评价") return delta > 0 ? "士林口碑转好" : "士林口碑转坏";
+      if (label === "万历信任") return delta > 0 ? "帝心稍近" : "帝心转冷";
+      if (label === "士林清议") return delta > 0 ? "士林口碑转好" : "士林口碑转坏";
       if (label === "民心") return delta > 0 ? "民心稍安" : "民心转低";
-      if (label === "财政健康") return delta > 0 ? "财政气色转稳" : "财政更吃紧";
-      if (label === "朋党烈度") return delta > 0 ? "朋党火势更旺" : "朋党火势稍退";
+      if (label === "国用充实") return delta > 0 ? "国用气色转稳" : "国用更吃紧";
+      if (label === "反张声势") return delta > 0 ? "反张声势更旺" : "反张声势稍退";
       if (label === "朝局压力") return delta > 0 ? "朝局压力抬头" : "朝局压力回落";
     }
 
@@ -414,9 +414,9 @@
     if (!options.length) return "";
     if (summary.rewardChosen) {
       var notes = summary.rewardChosen.notes && summary.rewardChosen.notes.length ? '<span>' + escapeHtml(summary.rewardChosen.notes.join("；")) + '</span>' : "";
-      return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">仕途沉淀</div><div class="reward-picked"><b>' + escapeHtml(summary.rewardChosen.name) + '</b><p>' + escapeHtml(summary.rewardChosen.desc || "") + '</p>' + notes + '</div></section>';
+      return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">新政沉淀</div><div class="reward-picked"><b>' + escapeHtml(summary.rewardChosen.name) + '</b><p>' + escapeHtml(summary.rewardChosen.desc || "") + '</p>' + notes + '</div></section>';
     }
-    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">仕途沉淀（三选一）</div><div class="reward-options">' +
+    return '<section class="summary-section summary-section--wide reward-panel"><div class="panel-title">新政沉淀（三选一）</div><div class="reward-options">' +
       options.map(function (option, index) {
         return '<button class="reward-card" data-reward-index="' + index + '"><b>' + escapeHtml(option.name) + '</b><span>' + escapeHtml(option.desc || "") + '</span></button>';
       }).join("") +
@@ -462,7 +462,7 @@
         '<p class="summary-prose">' + escapeHtml(summaryProse) + '</p>' +
         rewardHtml +
         officeDraftHtml +
-        '<div class="modal-actions summary-actions"><button id="summary-continue" ' + (canContinue ? "" : "disabled") + '>' + (needsReward ? "先选择沉淀" : needsOfficePack ? "先选择官职包" : "进入下季") + '</button></div>' +
+        '<div class="modal-actions summary-actions"><button id="summary-continue" ' + (canContinue ? "" : "disabled") + '>' + (needsReward ? "先选择沉淀" : needsOfficePack ? "先选择阶段包" : "进入下季") + '</button></div>' +
       '</div>'
     );
     Array.prototype.forEach.call(document.querySelectorAll("[data-reward-index]"), function (button) {
@@ -563,15 +563,15 @@
     var s = Game.state;
     var office = Game.getOffice();
     var career = Game.getCareerProgress ? Game.getCareerProgress() : { merit: 0, threshold: office.promotionMerit, nextOffice: null, rankName: office.rankName || office.name };
-    var meritText = career.threshold ? career.merit + "/" + career.threshold + " → " + career.nextOffice.name : career.merit + " 满阶";
+    var meritText = career.threshold ? career.merit + "/" + career.threshold + " → " + career.nextOffice.name : String(career.merit);
     var items = [
-      ["年份", "第" + s.year + "年"],
-      ["季节", GameData.seasons[s.seasonIndex]],
+      ["纪年", Game.timelineYearLabel ? Game.timelineYearLabel(s.year) : "第" + s.year + "年"],
+      ["时令", GameData.seasons[s.seasonIndex]],
       ["年龄", s.age + "岁"],
-      ["官职", office.name],
-      ["官阶", career.rankName],
-      ["官评", meritText],
-      ["任期目标", office.goal]
+      ["阶段", office.name],
+      ["身份", career.rankName],
+      ["新政威望", meritText],
+      ["本阶段要务", office.goal]
     ];
     el("time-strip").innerHTML = items.map(function (item) {
       return '<div class="time-cell"><div class="time-label">' + item[0] + '</div><div class="time-value">' + escapeHtml(item[1]) + '</div></div>';
@@ -586,9 +586,9 @@
     }).join("");
     var fameHtml = [
       statBlock("清名", s.fame.clean, 20, false, "fame", "clean"),
-      statBlock("能名", s.fame.competence, 20, false, "fame", "competence"),
-      statBlock("文名", s.fame.literary, 20, false, "fame", "literary"),
-      statBlock("权名", s.fame.power, 20, false, "fame", "power"),
+      statBlock("政绩", s.fame.competence, 20, false, "fame", "competence"),
+      statBlock("经术声望", s.fame.literary, 20, false, "fame", "literary"),
+      statBlock("权势", s.fame.power, 20, false, "fame", "power"),
       statBlock("酷名", s.fame.cruel, 20, true, "fame", "cruel"),
       statBlock("贪名", s.fame.corruption, 20, true, "fame", "corruption")
     ].join("");
@@ -600,9 +600,14 @@
     var perkHtml = Game.getStylePerks ? '<div class="style-perks">' + Game.getStylePerks().map(function (perk) {
       return '<div class="style-perk ' + (perk.active ? "style-perk--active" : "") + '"><b>' + escapeHtml(perk.tag) + " " + escapeHtml(perk.value) + "/" + escapeHtml(perk.threshold) + '</b><span>' + escapeHtml(perk.text) + '</span></div>';
     }).join("") + '</div>' : "";
+    var player = GameData.player || {};
+    var playerName = player.name || "张居正";
+    var courtesy = player.courtesy ? "字：" + player.courtesy : "";
+    var nativePlace = player.nativePlace || "湖广江陵";
+    var title = player.title || office.rankName || office.name;
 
     el("character-panel").innerHTML =
-      '<div class="character-identity"><div class="character-portrait-slice" aria-hidden="true"></div><div><b>李燕之</b><span>籍贯：京兆府</span><span>性格：' + escapeHtml(s.traits.join("、")) + '</span><span>官职：' + escapeHtml(office.rankName || office.name) + '</span></div></div>' +
+      '<div class="character-identity"><div class="character-portrait-slice" aria-hidden="true"></div><div><b>' + escapeHtml(playerName) + '</b><span>籍贯：' + escapeHtml(nativePlace) + '</span>' + (courtesy ? '<span>' + escapeHtml(courtesy) + '</span>' : '') + '<span>性格：' + escapeHtml(s.traits.join("、")) + '</span><span>身份：' + escapeHtml(title) + '</span></div></div>' +
       '<div class="tags">' + tags + '</div>' +
       styleHtml +
       perkHtml +
@@ -753,11 +758,11 @@
   function renderWorld() {
     var s = Game.state;
     var worldHtml = [
-      statBlock("皇帝信任", s.world.emperorTrust, 20, false, "world", "emperorTrust"),
-      statBlock("士林评价", s.world.scholarOpinion, 20, false, "world", "scholarOpinion"),
+      statBlock("万历信任", s.world.emperorTrust, 20, false, "world", "emperorTrust"),
+      statBlock("士林清议", s.world.scholarOpinion, 20, false, "world", "scholarOpinion"),
       statBlock("民心", s.world.publicMood, 20, false, "world", "publicMood"),
-      statBlock("财政健康", s.world.fiscalHealth, 20, false, "world", "fiscalHealth"),
-      statBlock("朋党烈度", s.world.factionHeat, 20, true, "world", "factionHeat"),
+      statBlock("国用充实", s.world.fiscalHealth, 20, false, "world", "fiscalHealth"),
+      statBlock("反张声势", s.world.factionHeat, 20, true, "world", "factionHeat"),
       statBlock("朝局压力", s.world.courtPressure, 20, true, "world", "courtPressure")
     ].join("");
     function relationPriority(person) {
@@ -990,7 +995,7 @@
     var tags = (card.tags || []).map(function (tag) {
       return '<span class="tag">' + escapeHtml(tag) + '</span>';
     }).join("");
-    var sourceText = selected.sources && selected.sources.length ? selected.sources.join("、") : "仕途沉淀";
+    var sourceText = selected.sources && selected.sources.length ? selected.sources.join("、") : "新政沉淀";
     el("deck-detail-panel").innerHTML =
       '<div class="detail-card ' + visual.cls + '">' +
         '<div class="detail-card-cost">' + renderCostChips(card.cost) + '</div>' +
@@ -1061,10 +1066,10 @@
 
   function renderRelationFilters() {
     var groups = [
-      ["朝廷", "皇帝、上司、政敌"],
-      ["士林", "座师、同年、清议"],
-      ["地方", "士绅、胥吏、百姓"],
-      ["风险", "猜忌、亏欠、怨恨"]
+      ["朝廷", "万历帝、内阁、部院"],
+      ["内廷", "李太后、冯保、司礼监"],
+      ["地方", "士绅、清丈、河工"],
+      ["风险", "言官、家门、身后清算"]
     ];
     el("relation-filter-panel").innerHTML =
       '<div class="relation-filter-list">' + groups.map(function (group) {
@@ -1169,7 +1174,7 @@
         return false;
       }
     });
-    return ending || { title: "仕途未终", text: "案卷仍在案头，身后评语尚未落笔。" };
+    return ending || { title: "新政未终", text: "案卷仍在案头，身后评语尚未落笔。" };
   }
 
   function lifeTimeline() {
@@ -1182,9 +1187,9 @@
     });
     if (!rows.length) {
       rows = [
-        { time: "第1年春", title: "翰林", text: "新科入仕，馆阁清职，先在文名与近君之间立足。", kind: "career" },
-        { time: "第5年", title: "知县", text: "若官评足够，将外放地方，处理钱粮、讼案与士绅。", kind: "future" },
-        { time: "第9年", title: "御史", text: "若历练足够，将入台垣，在弹劾、证据与清议间求生。", kind: "future" }
+        { time: "万历元年春", title: "辅政初定", text: "张居正奉遗诏辅政，以帝师与首辅身份稳住幼主、太后和内廷同盟。", kind: "career" },
+        { time: "万历三年", title: "新政推行", text: "考成、清丈、财赋、河工与边防陆续压到部院和地方。", kind: "future" },
+        { time: "万历八年", title: "权势晚期", text: "帝心渐变，言路反扑，夺情与家门旧账开始逼近身后评价。", kind: "future" }
       ];
     }
     return rows.slice(-10);
@@ -1197,7 +1202,7 @@
     }, 0));
     var rows = [
       ["清名", s.fame.clean, false],
-      ["能名", s.fame.competence, false],
+      ["政绩", s.fame.competence, false],
       ["权势", s.fame.power, false],
       ["酷虐", s.fame.cruel, true],
       ["贪腐", s.fame.corruption, true],
@@ -1226,12 +1231,12 @@
         '<aside class="life-profile">' +
           '<div class="ink-portrait ink-portrait--large">仕</div>' +
           '<div class="vertical-rank">' + escapeHtml(office.name) + '</div>' +
-          '<dl><dt>年龄</dt><dd>' + s.age + '岁</dd><dt>官职</dt><dd>' + escapeHtml(office.rankName || office.name) + '</dd><dt>官评</dt><dd>' + escapeHtml((s.career && s.career.merit) || 0) + '</dd><dt>仕途</dt><dd>第' + s.year + '年 · ' + escapeHtml(GameData.seasons[s.seasonIndex]) + '</dd></dl>' +
+          '<dl><dt>年龄</dt><dd>' + s.age + '岁</dd><dt>身份</dt><dd>' + escapeHtml(office.rankName || office.name) + '</dd><dt>新政威望</dt><dd>' + escapeHtml((s.career && s.career.merit) || 0) + '</dd><dt>纪年</dt><dd>' + escapeHtml(Game.timelineYearLabel ? Game.timelineYearLabel(s.year) : "第" + s.year + "年") + ' · ' + escapeHtml(GameData.seasons[s.seasonIndex]) + '</dd></dl>' +
         '</aside>' +
         '<section class="life-biography">' +
           '<div class="scroll-label">生平视图</div>' +
           '<h2>' + escapeHtml(s.ended ? ending.title : "一生纪略") + '</h2>' +
-          '<p class="life-subtitle">' + escapeHtml(s.ended ? "身后评定" : "仕途未终，史笔未定") + '</p>' +
+          '<p class="life-subtitle">' + escapeHtml(s.ended ? "身后评定" : "新政未终，史笔未定") + '</p>' +
           '<div class="ink-landscape"></div>' +
           '<div class="life-text">' + renderParagraphs(lifeNarrative) + '</div>' +
           '<div class="section"><div class="panel-title">污点与牵连</div><div class="tags">' + (stains || '<span class="muted">暂无污点入档。</span>') + '</div></div>' +
@@ -1239,9 +1244,9 @@
         '<aside class="life-judgment">' +
           '<div class="panel-title">身后评定</div>' +
           renderJudgmentRows() +
-          '<div class="life-verdict"><b>史评</b>' + renderParagraphs(s.ended ? ending.text : "功过仍在变化，清名、能名、权势与污点会共同决定身后评语。") + '</div>' +
+          '<div class="life-verdict"><b>史评</b>' + renderParagraphs(s.ended ? ending.text : "功过仍在变化，清名、政绩、权势与污点会共同决定身后评语。") + '</div>' +
         '</aside>' +
-        '<section class="life-timeline"><div class="panel-title">仕途时间线</div><div class="timeline-strip">' + timeline + '</div></section>' +
+        '<section class="life-timeline"><div class="panel-title">新政时间线</div><div class="timeline-strip">' + timeline + '</div></section>' +
         '<div class="life-actions"><button data-life-action="export">导出生平</button><button data-life-action="new" class="ghost-button">再开一局</button><button data-life-action="deck" class="ghost-button">查看手段库</button></div>' +
       '</div>';
     Array.prototype.forEach.call(document.querySelectorAll("[data-life-action]"), function (button) {

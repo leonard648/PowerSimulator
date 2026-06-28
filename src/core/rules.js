@@ -7,9 +7,9 @@
   function mapFameName(key) {
     return {
       clean: "清名",
-      competence: "能名",
-      literary: "文名",
-      power: "权名",
+      competence: "政绩",
+      literary: "经术声望",
+      power: "权势",
       cruel: "酷名",
       corruption: "贪名"
     }[key] || key;
@@ -17,11 +17,11 @@
 
   function mapWorldName(key) {
     return {
-      emperorTrust: "皇帝信任",
-      scholarOpinion: "士林评价",
+      emperorTrust: "万历信任",
+      scholarOpinion: "士林清议",
       publicMood: "民心",
-      fiscalHealth: "财政健康",
-      factionHeat: "朋党烈度",
+      fiscalHealth: "国用充实",
+      factionHeat: "反张声势",
       courtPressure: "朝局压力"
     }[key] || key;
   }
@@ -35,11 +35,61 @@
     }[key] || key;
   }
 
+  function timelineYearLabel(year) {
+    var timeline = GameData.timeline || {};
+    var numericYear = Math.max(1, year || 1);
+    var eraName = timeline.eraName || "";
+    var eraYear = numericYear === 1 ? "元年" : chineseYearNumber(numericYear) + "年";
+    var gregorian = timeline.startGregorianYear ? "（" + (timeline.startGregorianYear + numericYear - 1) + "）" : "";
+    return eraName ? eraName + eraYear + gregorian : "第" + numericYear + "年";
+  }
+
+  function chineseYearNumber(value) {
+    var digits = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+    if (value <= 10) return value === 10 ? "十" : digits[value];
+    if (value < 20) return "十" + digits[value - 10];
+    var tens = Math.floor(value / 10);
+    var ones = value % 10;
+    return digits[tens] + "十" + (ones ? digits[ones] : "");
+  }
+
+  function maxTimelineYear() {
+    return GameData.timeline && GameData.timeline.maxYear || 12;
+  }
+
+  function phaseForYear(year) {
+    var phases = GameData.timeline && GameData.timeline.phases || [];
+    var numericYear = Math.max(1, year || 1);
+    return phases.find(function (phase) {
+      return numericYear >= phase.startYear && numericYear <= phase.endYear;
+    }) || null;
+  }
+
+  function officeIdForYear(year) {
+    var phase = phaseForYear(year);
+    if (phase && phase.officeId) return phase.officeId;
+    if (year <= 2) return "hanlin";
+    if (year <= 7) return "county";
+    return "censor";
+  }
+
+  function timelineOfficeIdsThrough(year) {
+    var phases = GameData.timeline && GameData.timeline.phases || [];
+    if (!phases.length) return ["hanlin"];
+    return phases.filter(function (phase) {
+      return (year || 1) >= phase.startYear;
+    }).map(function (phase) {
+      return phase.officeId;
+    }).filter(function (id, index, list) {
+      return id && list.indexOf(id) === index;
+    });
+  }
+
   function currentTimeLabel() {
     var s = Game.state;
     var office = Game.getOffice ? Game.getOffice().name : "";
     var season = GameData.seasons[s.seasonIndex] || "";
-    return "第" + s.year + "年" + season + "·" + office;
+    return timelineYearLabel(s.year) + season + "·" + office;
   }
 
   function pushStoryBeat(kind, title, text) {
@@ -78,11 +128,12 @@
     var before = s.career.merit || 0;
     s.career.merit = Math.max(0, before + delta);
     if (notes && s.career.merit !== before) {
-      notes.push("官评 " + (delta > 0 ? "+" : "") + delta);
+      notes.push("新政威望 " + (delta > 0 ? "+" : "") + delta);
     }
   }
 
   function promoteIfReady() {
+    if (GameData.timeline) return syncCareerPhase();
     var s = Game.state;
     var promoted = false;
     s.career.unlockedOffices = s.career.unlockedOffices || ["hanlin"];
@@ -91,7 +142,7 @@
       if (!office.nextOfficeId || !office.promotionMerit || s.career.merit < office.promotionMerit) break;
       var next = Game.getOfficeById(office.nextOfficeId);
       if (next.minYear && s.year < next.minYear) break;
-      var text = "官评至 " + s.career.merit + "，由" + office.name + "升任" + next.name + "。";
+      var text = "政绩至 " + s.career.merit + "，由" + office.name + "升任" + next.name + "。";
       s.career.officeId = next.id;
       s.career.rankName = next.rankName || next.name;
       if (s.career.unlockedOffices.indexOf(next.id) < 0) {
@@ -110,9 +161,18 @@
 
   function demoteCareer(reason, notes) {
     var s = Game.state;
+    if (GameData.timeline) {
+      var office = Game.getOffice();
+      var text = "因" + reason + "，" + (office.rankName || office.name) + "声势受挫，阶段未退而清算风险加重。";
+      recordCareer("censure", text);
+      if (notes) notes.push("帝心受损：阶段未退");
+      Game.addLog(text);
+      pushStoryBeat("censure", "帝心受损", "中旨并未让你退位，却把许多旧账重新推到案前。权位还在，危险也因此更近。");
+      return true;
+    }
     var index = officeIndex(s.career.officeId);
     if (index <= 0) {
-      if (notes) notes.push("官阶已无可降");
+      if (notes) notes.push("阶段已无可退");
       return false;
     }
     var from = GameData.offices[index];
@@ -125,6 +185,48 @@
     Game.addLog(text);
     pushStoryBeat("demotion", "降调" + to.name, "这道调令写得很平，平到像是没人愿意承认其中有刀。");
     return true;
+  }
+
+  function syncCareerPhase() {
+    var s = Game.state;
+    if (!s || !s.career) return false;
+    var targetId = officeIdForYear(s.year || 1);
+    var target = Game.getOfficeById(targetId);
+    if (!target) return false;
+    var previousId = s.career.officeId;
+    var previous = Game.getOfficeById(previousId);
+    var unlockedBefore = (s.career.unlockedOffices || []).slice();
+    s.career.officeId = target.id;
+    s.career.rankName = target.rankName || target.name;
+    s.career.unlockedOffices = timelineOfficeIdsThrough(s.year || 1);
+    if (previousId === target.id) return false;
+    var firstUnlock = unlockedBefore.indexOf(target.id) < 0;
+    var text = timelineYearLabel(s.year || 1) + "，局势由" + (previous ? previous.name : "前局") + "转入" + target.name + "。";
+    recordCareer("phase", text);
+    Game.addLog(text + " 新的职责与手段库已经展开。");
+    pushStoryBeat("phase", target.name, "万历年序向前，新政也换了重心。旧账没有消失，只是随你一同进入下一局。");
+    if (firstUnlock && !(s.flags && s.flags["phase_cards_" + target.id])) {
+      if (!s.pendingSummary || !Game.queueOfficeCardDraft || !Game.queueOfficeCardDraft(target.id)) {
+        Game.addOfficeCards(target.id);
+      }
+    }
+    return true;
+  }
+
+  function queueNextPhaseDraftIfNeeded() {
+    var s = Game.state;
+    if (!GameData.timeline || !Game.queueOfficeCardDraft || s.pendingOfficeDraft) return;
+    if (s.seasonIndex !== GameData.seasons.length - 1) return;
+    var nextYear = (s.year || 1) + 1;
+    if (nextYear > maxTimelineYear()) return;
+    var nextOfficeId = officeIdForYear(nextYear);
+    if (!nextOfficeId || nextOfficeId === s.career.officeId) return;
+    s.flags = s.flags || {};
+    if (s.flags["phase_cards_" + nextOfficeId]) return;
+    if (Game.queueOfficeCardDraft(nextOfficeId)) {
+      var nextOffice = Game.getOfficeById(nextOfficeId);
+      Game.addLog("来年将入" + nextOffice.name + "，先择一组新政手段。");
+    }
   }
 
   function refreshRelationWarnings() {
@@ -360,9 +462,9 @@
 
   function highRelationRisk() {
     var rel = Game.state.relations;
-    if (rel.rival.resentment >= 8) return "政敌近来递话很少，反倒让人不安；凡是经过都察院的抄件，似乎都会多停半日。";
-    if (rel.gentry.resentment >= 7) return "地方来信不再明着抗拒，只在措辞里留出刺，像是在等你先失手。";
-    if (rel.clerks.resentment >= 7) return "胥吏见你入署便低头收声，账册倒是送得勤，页角却总有重抄的痕迹。";
+    if (rel.rival.resentment >= 8) return "言官近来递章很少，反倒让人不安；凡是经过都察院的抄件，似乎都会多停半日。";
+    if (rel.gentry.resentment >= 7) return "地方来信不再明着抗清丈，只在契册措辞里留刺，像是在等你先失手。";
+    if (rel.clerks.resentment >= 7) return "部院官吏见你批票便低头收声，文书倒是送得勤，页角却总有重抄的痕迹。";
     if (rel.scholars.resentment >= 6) return "士林笔记里已经有了你的名字，只是旁边还空着评语。";
     return "";
   }
@@ -372,7 +474,7 @@
     if (style === "清流") return "你知道旁人正在等一句硬话，可硬话一出口，便很难再收回。";
     if (style === "能吏") return "案头账册、期限与人名排成一列，你最先看的仍是哪里能落笔。";
     if (style === "权谋") return "你没有急着表态，只先问这件事是谁最怕被查清。";
-    if (style === "仁政") return "堂外人的哭声压得很低，却比堂上所有官话都重。";
+    if (style === "仁政") return "河工、边饷与民生奏报并排放着，哪一封都不像能轻轻揭过。";
     if (style === "圆滑") return "你把几封来信按轻重叠好，明白这一局未必只能有输赢。";
     if (style === "酷吏") return "你看见下属眼里的惧意，也知道惧意有时比信任更快。";
     if (style === "贪腐") return "有人把价码说得含混，仿佛只是在谈天气。";
@@ -380,12 +482,14 @@
   }
 
   function participantStoryLine(template) {
-    if (hasParticipant(template, "皇帝")) return "宫中只漏出一句含混口风，像准许你进，又像等你自己退。";
-    if (hasParticipant(template, "地方士绅")) return "几位乡绅的名帖已经压在案头，纸香很淡，分量却沉。";
-    if (hasParticipant(template, "胥吏")) return "书吏送来案卷时手指按住一角，像怕你看见，又像盼你看见。";
-    if (hasParticipant(template, "政敌")) return "对头没有出面，只让一封抄件先到，字字都像旁观。";
-    if (hasParticipant(template, "士林")) return "书院与茶肆已经传开两个版本，哪个都不全真，哪个都足以伤人。";
-    if (hasParticipant(template, "百姓")) return "堂外的脚步声越聚越密，没人敢高声，却都在等县衙给一句话。";
+    if (hasParticipant(template, "万历帝") || hasParticipant(template, "皇帝")) return "宫中只漏出一句含混口风，像准许你进，又像等你自己退。";
+    if (hasParticipant(template, "李太后")) return "慈宁宫传出的口气不重，却足够让外廷明白此事不能拖。";
+    if (hasParticipant(template, "冯保") || hasParticipant(template, "内廷")) return "司礼监的风声比正式批红早半步到内阁，早得正好，也早得危险。";
+    if (hasParticipant(template, "内阁同僚")) return "阁臣们在票拟上留出细密空白，像是等你决定谁来担第一笔。";
+    if (hasParticipant(template, "部院执行") || hasParticipant(template, "户部")) return "六部文书叠得极整，越整齐，越像有人把难处藏在格式里。";
+    if (hasParticipant(template, "地方士绅")) return "地方契册与族谱一同压在案头，纸香很淡，分量却沉。";
+    if (hasParticipant(template, "政敌言官") || hasParticipant(template, "言官") || hasParticipant(template, "政敌")) return "对头没有出面，只让一封抄件先到，字字都像旁观。";
+    if (hasParticipant(template, "士林清议") || hasParticipant(template, "士林")) return "书院与坊间已经传开两个版本，哪个都不全真，哪个都足以伤人。";
     return "案卷送到时封口尚新，火漆裂处露出一点旧尘。";
   }
 
@@ -402,13 +506,13 @@
   }
 
   function officeTensionLine(office, s) {
-    var yearText = "第" + s.year + "年" + (GameData.seasons[s.seasonIndex] || "");
-    return "眼下是" + office.name + "任上" + yearText + "，" + office.goal + "已不只是任期考语；这桩事一旦落笔，旁人便会从中衡量你究竟站在哪一边。";
+    var yearText = timelineYearLabel(s.year) + (GameData.seasons[s.seasonIndex] || "");
+    return "眼下是" + yearText + "，局势处在“" + office.name + "”： " + office.goal + "这桩事一旦落笔，旁人便会从中衡量新政究竟还能走多远。";
   }
 
   function privatePressureLines(s) {
     var lines = [styleMoodLine()];
-    if (s.resources.pressure >= 12) lines.push("连月压力已重，案卷尚未展开，身体却先记住了仕途的代价。");
+    if (s.resources.pressure >= 12) lines.push("连月压力已重，案卷尚未展开，身体却先记住了新政的代价。");
     if (s.stains.length) {
       lines.push("旧日留下的" + s.stains.length + "处污点仍在案底沉着，像有人替它们记着可以重见天日的时辰。");
     }
@@ -479,7 +583,7 @@
       relationLine = "此事本由“" + (event.relationSource || "关系阈值") + "”引发，结局会反过来改写旁人对你的亲近、猜忌或怨恨。";
     } else if (event.special === "npc" && event.npcId) {
       var def = npcDefById(event.npcId);
-      if (def) relationLine = def.name + "因此更深地写入你的仕途。此人不是一段插曲，而会在往后的案卷里继续索取、偿还或记恨。";
+      if (def) relationLine = def.name + "因此更深地写入新政案卷。此人不是一段插曲，而会在往后的案卷里继续索取、偿还或记恨。";
     } else {
       relationLine = "这类公事看似一季一结，实际会把名声、钱粮、人情和朝局压力一点点推向新的形状。";
     }
@@ -724,13 +828,13 @@
   function styleRewardOption(style) {
     var tag = style.tag;
     if (tag === "清流") {
-      return { id: "style_clean", name: "清议入史", desc: "清名 +1，士林评价 +1。", effect: { fame: { clean: 1 }, world: { scholarOpinion: 1 } } };
+      return { id: "style_clean", name: "清议入史", desc: "清名 +1，士林清议 +1。", effect: { fame: { clean: 1 }, world: { scholarOpinion: 1 } } };
     }
     if (tag === "能吏") {
-      return { id: "style_competence", name: "整饬成例", desc: "能名 +1，财政健康 +1。", effect: { fame: { competence: 1 }, world: { fiscalHealth: 1 } } };
+      return { id: "style_competence", name: "整饬成例", desc: "政绩 +1，国用充实 +1。", effect: { fame: { competence: 1 }, world: { fiscalHealth: 1 } } };
     }
     if (tag === "权谋") {
-      return { id: "style_power", name: "暗线归拢", desc: "权名 +1，朋党烈度 -1，压力 +1。", effect: { fame: { power: 1 }, world: { factionHeat: -1 }, resources: { pressure: 1 } } };
+      return { id: "style_power", name: "暗线归拢", desc: "权势 +1，反张声势 -1，压力 +1。", effect: { fame: { power: 1 }, world: { factionHeat: -1 }, resources: { pressure: 1 } } };
     }
     if (tag === "仁政") {
       return { id: "style_benevolent", name: "民间口碑", desc: "民心 +2，清名 +1。", effect: { fame: { clean: 1 }, world: { publicMood: 2 } } };
@@ -739,12 +843,12 @@
       return { id: "style_smooth", name: "留足台阶", desc: "人情 +1，政敌怨恨 -1。", effect: { resources: { favor: 1 }, relations: { rival: { resentment: -1 } } } };
     }
     if (tag === "酷吏") {
-      return { id: "style_cruel", name: "威势压服", desc: "酷名 +1，胥吏畏惧 +1，民心 -1。", effect: { fame: { cruel: 1 }, world: { publicMood: -1 }, relations: { clerks: { fear: 1 } } } };
+      return { id: "style_cruel", name: "威势压服", desc: "酷名 +1，部院畏惧 +1，民心 -1。", effect: { fame: { cruel: 1 }, world: { publicMood: -1 }, relations: { clerks: { fear: 1 } } } };
     }
     if (tag === "贪腐") {
       return { id: "style_corrupt", name: "遮掩账脚", desc: "银两 +2，贪名 +1。", effect: { resources: { money: 2 }, fame: { corruption: 1 } } };
     }
-    return { id: "style_foundation", name: "补强根基", desc: "能名 +1，清名 +1。", effect: { fame: { competence: 1, clean: 1 } } };
+    return { id: "style_foundation", name: "补强根基", desc: "政绩 +1，清名 +1。", effect: { fame: { competence: 1, clean: 1 } } };
   }
 
   function draftPoolForState(result) {
@@ -757,13 +861,13 @@
     else if (style === "能吏") pool = ["case_precedent", "joint_review", "evidence_chain", "strict_quota"];
     else if (style === "权谋") pool = ["turn_reaction", "watch_in_silence", "secret_memorial", "withhold_dossier"];
     else if (style === "仁政") pool = ["people_register", "public_works", "repair_waterworks", "village_covenant"];
-    else if (style === "圆滑") pool = ["quiet_broker", "smooth_transfer", "share_credit", "humble_apology"];
-    else pool = ["public_repute", "case_precedent", "turn_reaction", "people_register", "quiet_broker"];
+    else if (style === "圆滑") pool = ["quiet_compensation", "smooth_transfer", "share_credit", "humble_apology"];
+    else pool = ["public_repute", "case_precedent", "turn_reaction", "people_register", "quiet_compensation"];
 
     if (office === "hanlin") pool = pool.concat(["ritual_poem", "educate_heir", "private_warning"]);
     if (office === "county") pool = pool.concat(["seal_grain", "village_covenant", "people_register", "case_precedent"]);
     if (office === "censor") pool = pool.concat(["chain_memorial", "joint_review", "turn_reaction", "watch_in_silence"]);
-    if (!result.success) pool = pool.concat(["medical_rest", "quiet_broker", "case_precedent"]);
+    if (!result.success) pool = pool.concat(["medical_rest", "quiet_compensation", "case_precedent"]);
     if (s.stains.length >= 2) pool = pool.concat(["turn_reaction", "watch_in_silence"]);
 
     return pool.filter(function (id, index) {
@@ -787,7 +891,7 @@
       archive_search: "joint_review",
       academy_lecture: "public_repute",
       court_debate: "chain_memorial",
-      private_warning: "quiet_broker",
+      private_warning: "quiet_compensation",
       secret_memorial: "watch_in_silence",
       withhold_dossier: "turn_reaction"
     };
@@ -809,13 +913,14 @@
   function gapRewardOption(result) {
     var gaps = (result.blocked || []).concat(result.unresolved || []).join("、");
     var id = "case_precedent";
-    if (gaps.indexOf("证据不足") >= 0) id = "evidence_chain";
-    else if (gaps.indexOf("派系阻挠") >= 0 || gaps.indexOf("举荐不足") >= 0) id = "quiet_broker";
-    else if (gaps.indexOf("上意不明") >= 0) id = "watch_in_silence";
-    else if (gaps.indexOf("清议沸腾") >= 0 || gaps.indexOf("流言滋生") >= 0) id = "public_repute";
-    else if (gaps.indexOf("钱粮缺口") >= 0) id = "commercial_tax";
-    else if (gaps.indexOf("民怨积累") >= 0 || gaps.indexOf("灾情蔓延") >= 0) id = "people_register";
-    else if (gaps.indexOf("政敌反扑") >= 0 || gaps.indexOf("朋党反扑") >= 0) id = "turn_reaction";
+    if (gaps.indexOf("帝心未定") >= 0) id = "imperial_mood";
+    else if (gaps.indexOf("言路沸腾") >= 0 || gaps.indexOf("夺情非议") >= 0) id = "public_repute";
+    else if (gaps.indexOf("财赋缺口") >= 0 || gaps.indexOf("清丈阻力") >= 0) id = "commercial_tax";
+    else if (gaps.indexOf("河工急迫") >= 0) id = "repair_waterworks";
+    else if (gaps.indexOf("边镇军饷") >= 0) id = "strict_quota";
+    else if (gaps.indexOf("部院迟滞") >= 0 || gaps.indexOf("考成压力") >= 0) id = "case_precedent";
+    else if (gaps.indexOf("内廷牵连") >= 0 || gaps.indexOf("权势过盛") >= 0 || gaps.indexOf("身后清算") >= 0) id = "turn_reaction";
+    else if (gaps.indexOf("地方抵制") >= 0) id = "people_register";
     if (!Game.cardById(id)) id = "case_precedent";
     return {
       id: "gap_card",
@@ -956,7 +1061,7 @@
     var event = s.currentEvent;
     if (!event) return;
     if ((s.tagUse.清流 || 0) >= 6 && cardHasAnyTag(card, ["清流", "清议"])) {
-      applyMasteryTrack(event, bestTrackByNames(event, ["清议沸腾", "流言滋生", "文名不足"]), -1, "清流成势", notes);
+      applyMasteryTrack(event, bestTrackByNames(event, ["言路沸腾", "夺情非议", "士林清议", "身后清算"]), -1, "清流成势", notes);
       s.relations.emperor.suspicion += 1;
       notes.push("清名刺眼：皇帝猜忌 +1");
     }
@@ -966,14 +1071,14 @@
       notes.push("案牍压身：压力 +1");
     }
     if ((s.tagUse.权谋 || 0) >= 5 && cardHasAnyTag(card, ["权谋"])) {
-      applyMasteryTrack(event, bestTrackByNames(event, ["政敌反扑", "朋党反扑", "派系阻挠", "上意不明"]), -1, "暗线成网", notes);
+      applyMasteryTrack(event, bestTrackByNames(event, ["帝心未定", "高拱余波", "内廷牵连", "权势过盛", "身后清算"]), -1, "暗线成网", notes);
       s.resources.pressure += 1;
       notes.push("疑惧入心：压力 +1");
     }
     if ((s.tagUse.仁政 || 0) >= 5 && cardHasAnyTag(card, ["仁政"])) {
       s.world.publicMood += 1;
       s.world.fiscalHealth -= 1;
-      notes.push("民望转高：民心 +1；财政健康 -1");
+      notes.push("民望转高：民心 +1；国用充实 -1");
     }
     if ((s.tagUse.圆滑 || 0) >= 5 && cardHasAnyTag(card, ["圆滑", "人情"]) && s.relations.rival.resentment > 0) {
       s.relations.rival.resentment -= 1;
@@ -1184,7 +1289,7 @@
       if (!actionMatchesChoice(item, tags)) return false;
       var sources = item.sources || [];
       return (item.level || 1) > 1 || sources.some(function (source) {
-        return source !== "入仕根基" && source !== "旧存档迁移";
+        return source !== "辅政根基" && source !== "旧存档迁移";
       });
     });
     if (!matches.length) return null;
@@ -1411,7 +1516,7 @@
     var s = Game.state;
     var emperor = s.relations.emperor || {};
     return event.fatalOnFail === "framed_execution" &&
-      s.year >= 10 &&
+      s.year >= 9 &&
       s.career.officeId === "censor" &&
       result.level === "fail" &&
       s.relations.rival.resentment >= 16 &&
@@ -1431,7 +1536,7 @@
       title: ending.title,
       text: ending.text
     };
-    Game.addLog("仕途骤断：" + ending.title + "。" + reason);
+    Game.addLog("新政骤断：" + ending.title + "。" + reason);
     pushStoryBeat("fail", ending.title, reason);
   }
 
@@ -1681,10 +1786,10 @@
 
   function refreshSummaryDiff(summary, before, after) {
     var careerItems = [];
-    pushDiff(careerItems, "官评", before.career.merit || 0, after.career.merit || 0);
+    pushDiff(careerItems, "新政威望", before.career.merit || 0, after.career.merit || 0);
     if (before.career.officeId !== after.career.officeId || before.career.rankName !== after.career.rankName) {
       careerItems.push({
-        label: "官职",
+        label: "阶段",
         beforeText: Game.getOfficeById(before.career.officeId).name,
         afterText: Game.getOfficeById(after.career.officeId).name,
         text: Game.getOfficeById(before.career.officeId).name + " → " + Game.getOfficeById(after.career.officeId).name
@@ -1696,7 +1801,7 @@
       { title: "名声", items: diffBag(before.fame, after.fame, mapFameName) },
       { title: "朝局", items: diffBag(before.world, after.world, mapWorldName) },
       { title: "阵营关系", items: diffRelations(before.relations, after.relations) },
-      { title: "仕途", items: careerItems }
+      { title: "新政履历", items: careerItems }
     ].filter(function (group) { return group.items.length; });
     summary.deltaGroups = groups;
     summary.npcBeats = diffNpcs(before.npcs, after.npcs);
@@ -1737,7 +1842,7 @@
     var outcomeNotes = [];
     changeMerit(resultMeritDelta(result), outcomeNotes);
     applyOutcomeEffect(effectForResult(event, result), outcomeNotes);
-    if (outcomeNotes.length) text += " 仕途结算：" + outcomeNotes.join("；") + "。";
+    if (outcomeNotes.length) text += " 新政结算：" + outcomeNotes.join("；") + "。";
     Game.boundState();
     refreshRelationWarnings();
 
@@ -1757,6 +1862,7 @@
     var autoGrowth = [];
     Game.maybeAddPressureCard();
     promoteIfReady();
+    queueNextPhaseDraftIfNeeded();
     Game.boundState();
     refreshRelationWarnings();
     var after = snapshotSeasonState();
@@ -1780,7 +1886,6 @@
 
   function advanceTime() {
     var s = Game.state;
-    var prevOffice = Game.getOffice().id;
     s.seasonIndex += 1;
     if (s.seasonIndex >= GameData.seasons.length) {
       s.seasonIndex = 0;
@@ -1790,16 +1895,13 @@
       s.resources.favor = Game.Util.clamp(s.resources.favor + 1, 0, 12);
       s.world.factionHeat += s.fame.power >= 8 ? 1 : 0;
     }
-    if (s.year > 12) {
+    if (s.year > maxTimelineYear()) {
+      s.year = maxTimelineYear();
+      s.seasonIndex = GameData.seasons.length - 1;
       Game.finishGame();
       return;
     }
-    var newOffice = Game.getOffice().id;
-    if (newOffice !== prevOffice) {
-      Game.addOfficeCards(newOffice);
-      var officeName = Game.getOffice().name;
-      Game.addLog("转任" + officeName + "，新的职责与手段库已经展开。");
-    }
+    syncCareerPhase();
     tickRelationCooldowns();
     tickNpcCooldowns();
     resetQuarterResources();
@@ -1940,6 +2042,10 @@
 
   Game.getDominantStyle = dominantStyle;
 
+  Game.timelineYearLabel = timelineYearLabel;
+
+  Game.syncCareerPhase = syncCareerPhase;
+
   Game.getStylePerks = function () {
     var tagUse = Game.state.tagUse || {};
     return [
@@ -1947,7 +2053,7 @@
       { tag: "清流", threshold: 6, text: "清流/清议处置额外压一处舆论阻力，但皇帝猜忌 +1。" },
       { tag: "能吏", threshold: 6, text: "政务/法度处置额外压最高关键阻力，压力 +1。" },
       { tag: "权谋", threshold: 5, text: "权谋处置额外处理反扑或上意，压力 +1。" },
-      { tag: "仁政", threshold: 5, text: "仁政处置民心 +1，但财政健康 -1。" }
+      { tag: "仁政", threshold: 5, text: "仁政处置民心 +1，但国用充实 -1。" }
     ].map(function (perk) {
       perk.value = tagUse[perk.tag] || 0;
       perk.active = perk.value >= perk.threshold;
@@ -1961,8 +2067,8 @@
     return {
       office: office,
       merit: s.career ? s.career.merit : 0,
-      threshold: office.promotionMerit,
-      nextOffice: office.nextOfficeId ? Game.getOfficeById(office.nextOfficeId) : null,
+      threshold: GameData.timeline ? null : office.promotionMerit,
+      nextOffice: !GameData.timeline && office.nextOfficeId ? Game.getOfficeById(office.nextOfficeId) : null,
       rankName: s.career ? s.career.rankName : office.rankName || office.name
     };
   };
@@ -2126,9 +2232,9 @@
       desc: option.desc,
       notes: notes
     };
-    summary.autoGrowth = (summary.autoGrowth || []).concat(["仕途沉淀：" + option.name + (notes.length ? "，" + notes.join("；") : "")]);
+    summary.autoGrowth = (summary.autoGrowth || []).concat(["新政沉淀：" + option.name + (notes.length ? "，" + notes.join("；") : "")]);
     refreshSummaryDiff(summary, summary.baseline || snapshotSeasonState(), snapshotSeasonState());
-    Game.addLog("仕途沉淀：" + option.name + "。");
+    Game.addLog("新政沉淀：" + option.name + "。");
     Game.boundState();
     refreshRelationWarnings();
     return true;
@@ -2172,12 +2278,12 @@
     var s = Game.state;
     s.ended = true;
     s.currentEvent = null;
-    var ending = GameData.endings.find(function (item) { return item.when(s); });
+    var ending = GameData.endings.find(function (item) { return item.when(s); }) || GameData.endings[GameData.endings.length - 1];
     s.ending = {
       title: ending.title,
       text: ending.text
     };
-    Game.addLog("仕途终局：" + ending.title);
+    Game.addLog("万历十年终局：" + ending.title);
   };
 
   function splitParagraphText(text) {
@@ -2195,15 +2301,15 @@
         return false;
       }
     });
-    return ending || { title: "仕途未终", text: "案卷仍在案头，身后评语尚未落笔。" };
+    return ending || { title: "新政未终", text: "案卷仍在案头，身后评语尚未落笔。" };
   }
 
   function strongestFameMetric(s) {
     return [
       ["清名", s.fame.clean, "名节自持，遇利多能止步"],
-      ["能名", s.fame.competence, "长于案牍钱粮，能把乱局拆成可办之事"],
-      ["文名", s.fame.literary, "以文字、经义和奏疏见称"],
-      ["权名", s.fame.power, "善用门路、密折和朝中暗线"],
+      ["政绩", s.fame.competence, "长于综核名实，能把乱局拆成可办之事"],
+      ["经术声望", s.fame.literary, "以经筵讲读、文字和奏疏见称"],
+      ["权势", s.fame.power, "善用票拟、内廷和朝中暗线"],
       ["酷名", s.fame.cruel, "手段峻急，能慑人也易伤人"],
       ["贪名", s.fame.corruption, "灰色交易留痕，清议难为其洗净"]
     ].sort(function (a, b) { return b[1] - a[1]; })[0];
@@ -2232,23 +2338,23 @@
     var office = Game.getOffice();
     var history = s.career && s.career.history || [];
     if (!history.length) {
-      return "其人二十四岁入仕，现仍居" + (office.rankName || office.name) + "，官评" + ((s.career && s.career.merit) || 0) + "。履历尚未大转，真正能够定其一生轻重的案卷仍在前方。";
+      return "张居正以首辅、帝师承万历初政，现居" + (office.rankName || office.name) + "，新政威望" + ((s.career && s.career.merit) || 0) + "。万历新政尚在展开，真正能定其身后轻重的案卷仍在前方。";
     }
     var entries = history.slice(-4).map(function (entry) {
       return entry.time + "，" + entry.text;
     }).join("；");
-    return "履历可考者，近事有：" + entries + "。这些升迁、降调或骤断之笔，使他的仕途不再只是年表，而成了一串能互相解释的因果。";
+    return "履历可考者，近事有：" + entries + "。这些阶段转换、训诫或骤断之笔，使万历新政不再只是年表，而成了一串能互相解释的因果。";
   }
 
   function buildFameNarrative(s) {
     var fame = strongestFameMetric(s);
     var stainText = s.stains.length ? "污点入档" + s.stains.length + "处，较重者为" + s.stains.slice(-3).map(cardName).join("、") + "。" : "暂未有污点足以单独成案。";
-    return "综其政声，最显者为" + fame[0] + "（" + fame[1] + "）：可谓" + fame[2] + "。清名" + s.fame.clean + "、能名" + s.fame.competence + "、文名" + s.fame.literary + "、权名" + s.fame.power + "、酷名" + s.fame.cruel + "、贪名" + s.fame.corruption + "并列案后，" + stainText;
+    return "综其政声，最显者为" + fame[0] + "（" + fame[1] + "）：可谓" + fame[2] + "。清名" + s.fame.clean + "、政绩" + s.fame.competence + "、经术声望" + s.fame.literary + "、权势" + s.fame.power + "、酷名" + s.fame.cruel + "、贪名" + s.fame.corruption + "并列案后，" + stainText;
   }
 
   function buildPeopleNarrative() {
     var people = npcHighlights(4);
-    if (!people.length) return "其仕途尚未与具名人物结成深线，所遇多为泛泛官场人情；这使他暂少牵连，也少了可被后人反复书写的私交。";
+    if (!people.length) return "其新政尚未与具名人物结成深线，所遇多为泛泛朝局人情；这使他暂少牵连，也少了可被后人反复书写的私交。";
     return "人物牵连中，" + people.map(function (item) {
       var state = item.state;
       var latest = state.history && state.history.length ? "，近事为" + state.history[state.history.length - 1].text : "";
@@ -2258,7 +2364,7 @@
 
   function buildCaseNarrative(s) {
     var beats = (s.storyBeats || []).slice(0, 5).reverse();
-    if (!beats.length) return "案卷纪年尚浅，只有几条寻常记事可供后来史笔取舍。";
+    if (!beats.length) return "万历纪年尚浅，只有几条寻常记事可供后来史笔取舍。";
     return "案卷纪年中较可入传者，有" + beats.map(function (beat) {
       var text = splitParagraphText(beat.text)[0] || "";
       return beat.time + "《" + beat.title + "》：" + text;
@@ -2271,7 +2377,7 @@
     var office = Game.getOffice();
     var style = dominantStyle();
     var paragraphs = [
-      s.ended ? "终局既定，史笔以《" + ending.title + "》为题收束其一生。回看十二年仕途，他最后停在" + (office.rankName || office.name) + "，年" + s.age + "，官评" + ((s.career && s.career.merit) || 0) + "。" : "仕途未终，史笔尚未定稿。此时他居" + (office.rankName || office.name) + "，年" + s.age + "，官评" + ((s.career && s.career.merit) || 0) + "，为官方法暂以“" + style.tag + "”最显。",
+      s.ended ? "终局既定，史笔以《" + ending.title + "》为题收束万历新政。回看十年首辅之局，张居正最后停在" + (office.rankName || office.name) + "，年" + s.age + "，新政威望" + ((s.career && s.career.merit) || 0) + "。" : "新政未终，史笔尚未定稿。此时张居正居" + (office.rankName || office.name) + "，年" + s.age + "，新政威望" + ((s.career && s.career.merit) || 0) + "，执政方法暂以“" + style.tag + "”最显。",
       buildFameNarrative(s),
       buildCareerNarrative(s),
       buildPeopleNarrative(),
@@ -2290,7 +2396,8 @@
     var s = Game.state;
     var lines = [];
     var ending = currentEndingForState(s);
-    lines.push("《官场浮沉生平传》");
+    var player = GameData.player || {};
+    lines.push("《" + (player.biographyTitle || "张居正万历新政纪略") + "》");
     lines.push("");
     lines.push("【传主总评】");
     Game.buildLifeNarrative().forEach(function (paragraph) {
@@ -2300,18 +2407,18 @@
     lines.push("结局：" + (s.ended ? ending.title : "未完，暂拟" + ending.title));
     lines.push("");
     lines.push("【政声与局势】");
-    lines.push("名声：清名" + s.fame.clean + "，能名" + s.fame.competence + "，文名" + s.fame.literary + "，权名" + s.fame.power + "，酷名" + s.fame.cruel + "，贪名" + s.fame.corruption);
-    lines.push("朝局：皇帝信任" + s.world.emperorTrust + "，士林评价" + s.world.scholarOpinion + "，民心" + s.world.publicMood + "，财政健康" + s.world.fiscalHealth + "，朋党烈度" + s.world.factionHeat + "，朝局压力" + s.world.courtPressure);
-    lines.push("仕途：现任" + Game.getOffice().name + "（" + (s.career ? s.career.rankName : Game.getOffice().rankName) + "），官评" + (s.career ? s.career.merit : 0));
+    lines.push("名声：清名" + s.fame.clean + "，政绩" + s.fame.competence + "，经术声望" + s.fame.literary + "，权势" + s.fame.power + "，酷名" + s.fame.cruel + "，贪名" + s.fame.corruption);
+    lines.push("朝局：万历信任" + s.world.emperorTrust + "，士林清议" + s.world.scholarOpinion + "，民心" + s.world.publicMood + "，国用充实" + s.world.fiscalHealth + "，反张声势" + s.world.factionHeat + "，朝局压力" + s.world.courtPressure);
+    lines.push("阶段：现处" + Game.getOffice().name + "（" + (s.career ? s.career.rankName : Game.getOffice().rankName) + "），新政威望" + (s.career ? s.career.merit : 0));
     lines.push("污点：" + (s.stains.length ? s.stains.map(cardName).join("、") : "无"));
     lines.push("");
-    lines.push("【仕途履历】");
+    lines.push("【新政履历】");
     if (s.career && s.career.history && s.career.history.length) {
       s.career.history.forEach(function (entry) {
         lines.push("- " + entry.time + "：" + entry.text);
       });
     } else {
-      lines.push("- 尚无升迁或清算记录。");
+      lines.push("- 尚无阶段转换或清算记录。");
     }
     lines.push("");
     lines.push("【人物牵连】");
