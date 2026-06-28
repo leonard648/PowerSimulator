@@ -35,7 +35,7 @@
   Game.buildStartingDeck = function () {
     var baseIds = [
       "memorial_direct", "careful_memorial", "academy_lecture", "write_edict",
-      "visit_mentor", "peer_letter", "refuse_gift", "court_debate",
+      "visit_mentor", "peer_letter", "peer_mediation", "refuse_gift", "court_debate",
       "archive_search", "seal_document", "family_support", "marriage_plea",
       "ritual_poem", "educate_heir", "copy_classics", "private_warning", "medical_rest"
     ];
