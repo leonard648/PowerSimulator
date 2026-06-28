@@ -2067,7 +2067,7 @@
     var s = Game.state;
     var lines = [];
     var ending = currentEndingForState(s);
-    lines.push("《官场卡牌构筑 Demo 生平传》");
+    lines.push("《官场浮沉生平传》");
     lines.push("");
     lines.push("【传主总评】");
     Game.buildLifeNarrative().forEach(function (paragraph) {
