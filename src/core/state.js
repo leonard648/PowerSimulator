@@ -130,6 +130,7 @@
       currentEvent: null,
       hasDrawn: false,
       preparedThisSeason: false,
+      preparedAction: null,
       prepDrawBonus: 0,
       ended: false,
       resources: {
@@ -221,6 +222,7 @@
       }
       loaded.storyBeats = loaded.storyBeats || [];
       loaded.preparedThisSeason = !!loaded.preparedThisSeason;
+      loaded.preparedAction = loaded.preparedThisSeason ? (loaded.preparedAction || null) : null;
       loaded.prepDrawBonus = loaded.prepDrawBonus || 0;
       loaded.pendingOfficeDraft = loaded.pendingOfficeDraft || null;
       loaded.career = normalizeCareer(loaded.career, loaded.year || 1);

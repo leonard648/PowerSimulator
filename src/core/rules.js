@@ -1605,6 +1605,7 @@
     if (s.resources.pressure >= 15) s.resources.energy -= 1;
     s.resources.energy = Math.max(2, s.resources.energy);
     s.hasDrawn = false;
+    s.preparedAction = null;
     s.selectedForExchange = [];
   }
 
@@ -1643,6 +1644,7 @@
     Game.state.pendingSummary = null;
     Game.state.hasDrawn = false;
     Game.state.preparedThisSeason = false;
+    Game.state.preparedAction = null;
     Game.state.prepDrawBonus = 0;
     armRelationCooldown(Game.state.currentEvent);
     armNpcCooldown(Game.state.currentEvent);
@@ -1714,6 +1716,7 @@
       return false;
     }
     s.preparedThisSeason = true;
+    s.preparedAction = action;
     Game.boundState();
     refreshRelationWarnings();
     return true;

@@ -678,7 +678,8 @@
     var exchangeReady = selected.length === 2;
     var prepareOptions = Game.getPrepareOptions ? Game.getPrepareOptions() : [];
     var prepareBar = (!s.hasDrawn && !locked && prepareOptions.length) ? '<div class="prepare-bar"><span>准备阶段</span>' + prepareOptions.map(function (option) {
-      return '<button data-prepare-action="' + escapeHtml(option.id) + '" class="ghost-button" ' + (option.disabled ? "disabled" : "") + '><b>' + escapeHtml(option.name) + '</b><small>' + escapeHtml(option.desc) + '</small></button>';
+      var isPrepared = s.preparedAction === option.id;
+      return '<button data-prepare-action="' + escapeHtml(option.id) + '" class="ghost-button prepare-option' + (isPrepared ? " prepare-option--selected" : "") + '" aria-pressed="' + (isPrepared ? "true" : "false") + '" ' + (option.disabled ? "disabled" : "") + '><b>' + escapeHtml(option.name) + '</b><small>' + escapeHtml(option.desc) + '</small>' + (isPrepared ? '<span class="selected-mark">已选</span>' : "") + '</button>';
     }).join("") + '</div>' : "";
     var exchangeBar = '<div class="exchange-bar">' +
       '<span>已选筹换：' + selected.length + '/2</span>' +
@@ -710,6 +711,7 @@
         return '<span>' + escapeHtml(hint) + '</span>';
       }).join("") + '</div>' : "";
       return '<article class="card ' + visual.cls + " " + (playable ? "card--playable" : "unplayable") + " " + (isSelected ? "card--selected" : "") + '">' +
+        (isSelected ? '<span class="selected-mark selected-mark--card">已选</span>' : "") +
         '<div class="card-header">' +
           '<div class="card-title-block">' +
             '<div class="card-type">' + escapeHtml(card.type) + " · " + escapeHtml(card.domain) + '</div>' +
