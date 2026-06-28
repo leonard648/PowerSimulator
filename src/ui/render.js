@@ -666,14 +666,15 @@
       '<b>案前风声</b>' +
       renderParagraphs(storyLines) +
       '</div>';
+    var eventDescHtml = event.desc ? '<p class="event-desc"><b>案由：</b>' + escapeHtml(event.desc) + '</p>' : "";
     el("event-panel").innerHTML =
       '<div class="event-title-row"><h2>' + escapeHtml(event.name) + specialBadge + '</h2><div class="event-meta">关键阻力需压到 4 或以下<br>威胁满格触发反制' + relationMeta + '</div></div>' +
-      '<p class="event-desc">' + escapeHtml(event.desc) + '</p>' +
+      storyHtml +
+      eventDescHtml +
       '<div class="tags">' + participantHtml + '</div>' +
       threatHtml +
       '<div class="section tracks">' + trackHtml + '</div>' +
       previewHtml +
-      storyHtml +
       played;
   }
 
@@ -682,15 +683,18 @@
     var locked = s.ended || !!s.pendingReward || !!s.pendingSummary;
     var stage = Game.getCurrentChoiceStage ? Game.getCurrentChoiceStage() : null;
     var complete = Game.currentEventChoicesComplete ? Game.currentEventChoicesComplete() : false;
-    el("hand-hint").innerHTML = '<p>' + escapeHtml(s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : complete ? "本季处置已完成，可以结束本季结案。" : stage ? "选择一项处置推进当前事务。费用不足的选项会变暗。" : "暂无可处置事务。") +
+    var progress = s.currentEvent && s.currentEvent.choiceStages && s.currentEvent.choiceStages.length ? (Math.min((s.currentEvent.choiceStageIndex || 0) + 1, s.currentEvent.choiceStages.length) + "/" + s.currentEvent.choiceStages.length) : "";
+    var stageInfo = stage && !complete && !locked ? '<div class="choice-stage-head choice-stage-head--compact"><span>阶段 ' + escapeHtml(progress) + '</span><b>' + escapeHtml(stage.title || "处置") + '</b><p>' + escapeHtml(stage.desc || "") + '</p></div>' : "";
+    if (el("hand-stage")) el("hand-stage").innerHTML = stageInfo;
+    el("hand-hint").innerHTML = '<div class="hand-hint-main"><p>' + escapeHtml(s.pendingSummary ? "本季事务已结案，请阅读总结后进入下季。" : complete ? "本季处置已完成，可以结束本季结案。" : stage ? "选择一项处置推进当前事务。费用不足的选项会变暗。" : "暂无可处置事务。") +
       ' <span class="cost-legend"><span>精=精力</span><span>银=银两</span><span>情=人情</span><span>压=压力</span></span></p>' +
+      '</div>' +
       renderChoiceResources();
     el("end-button").disabled = locked || !s.currentEvent || !complete;
     if (!s.currentEvent || locked) {
       el("hand-panel").innerHTML = '<div class="choices-empty"><p class="muted">' + (locked ? "本季事务已进入结算。" : "暂无事务。") + '</p></div>';
       return;
     }
-    var progress = s.currentEvent.choiceStages && s.currentEvent.choiceStages.length ? (Math.min((s.currentEvent.choiceStageIndex || 0) + 1, s.currentEvent.choiceStages.length) + "/" + s.currentEvent.choiceStages.length) : "";
     var choiceLog = (s.currentEvent.choiceLog || []).length ? '<div class="choice-log"><div class="panel-title">已定处置</div>' + s.currentEvent.choiceLog.map(function (entry) {
       return '<div class="choice-log-item"><b>' + escapeHtml(entry.stageTitle || "") + " · " + escapeHtml(entry.title || "") + '</b><p>' + escapeHtml(entry.outcomeText || entry.body || "") + '</p></div>';
     }).join("") + '</div>' : "";
@@ -699,7 +703,6 @@
       return;
     }
     var choices = Game.getCurrentChoices ? Game.getCurrentChoices() : [];
-    var stageInfo = stage ? '<div class="choice-stage-head"><span>阶段 ' + escapeHtml(progress) + '</span><b>' + escapeHtml(stage.title || "处置") + '</b><p>' + escapeHtml(stage.desc || "") + '</p></div>' : "";
     var html = choices.map(function (choice) {
       var playable = !locked && Game.canChooseChoice(choice);
       var preview = Game.getChoicePreview ? Game.getChoicePreview(choice).slice(0, 5) : [];
@@ -731,7 +734,7 @@
         '</div>' +
         '</article>';
     }).join("");
-    el("hand-panel").innerHTML = choiceLog + stageInfo + '<div class="cards choice-grid">' + (html || '<p class="muted">当前阶段没有可选处置。</p>') + '</div>';
+    el("hand-panel").innerHTML = choiceLog + '<div class="cards choice-grid">' + (html || '<p class="muted">当前阶段没有可选处置。</p>') + '</div>';
     if ((s.currentEvent.choiceStageIndex || 0) > 0) {
       var handScroller = el("hand-panel");
       var choiceGrid = handScroller.querySelector(".choice-grid");

@@ -403,7 +403,7 @@
 
   function officeTensionLine(office, s) {
     var yearText = "第" + s.year + "年" + (GameData.seasons[s.seasonIndex] || "");
-    return office.name + "任上" + yearText + "，" + office.goal + "已不只是考语，而是正在案前逼你表态的现实。";
+    return "眼下是" + office.name + "任上" + yearText + "，" + office.goal + "已不只是任期考语；这桩事一旦落笔，旁人便会从中衡量你究竟站在哪一边。";
   }
 
   function privatePressureLines(s) {
@@ -415,6 +415,14 @@
     var riskLine = highRelationRisk();
     if (riskLine) lines.push(riskLine);
     return lines;
+  }
+
+  function weaveStoryParagraphs(template, detail, hook, stakes, officeLine, privateNotes) {
+    var opening = [detail.scene || hook, detail.background || template.desc].filter(Boolean).join("");
+    var turn = [detail.conflict || stakes, officeLine].filter(Boolean).join("");
+    var inner = privateNotes.slice(0, 2).join("");
+    var close = [inner, detail.historicalWeight || stakes].filter(Boolean).join("");
+    return compactParagraphs([opening, turn, close], 4);
   }
 
   function makeEventStory(template) {
@@ -433,19 +441,14 @@
     var npcHook = npc && template.special === "npc" ? "这不是寻常公事，而是" + npc.name + "亲手递来的请托、试探或暗门。" : "";
     var hook = npcHook || relationHook || participantStoryLine(template);
     var stakes = "此案真正咬人的地方，是" + critical + "。若只把表面压平，余波会在下一季换个名字回来。";
-    var paragraphs = compactParagraphs([
-      detail.background || template.desc,
-      detail.scene || hook,
-      detail.conflict || stakes,
-      officeTensionLine(office, s),
-      privateNotes.join(" "),
-      detail.historicalWeight
-    ], 6);
+    var officeNote = officeTensionLine(office, s);
+    var paragraphs = weaveStoryParagraphs(template, detail, hook, stakes, officeNote, privateNotes);
     return {
+      version: 2,
       hook: hook,
       stakes: stakes,
       privateNote: privateNotes.slice(0, 2).join(" "),
-      officeNote: officeTensionLine(office, s),
+      officeNote: officeNote,
       paragraphs: paragraphs
     };
   }

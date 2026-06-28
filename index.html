@@ -30,9 +30,21 @@
     </header>
 
     <main id="main-view" class="layout app-view">
-      <aside class="panel side-panel character-shell">
-        <div class="panel-title">人物</div>
-        <div id="character-panel"></div>
+      <aside class="main-sidebar" aria-label="人物、关系与近事">
+        <section class="panel side-panel character-shell">
+          <div class="panel-title">人物</div>
+          <div id="character-panel"></div>
+        </section>
+
+        <section class="panel side-panel world-shell">
+          <div class="panel-title">关系与朝局</div>
+          <div id="world-panel"></div>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="panel-title">近事</div>
+          <div id="log-panel"></div>
+        </section>
       </aside>
 
       <section class="panel event-panel">
@@ -40,14 +52,10 @@
         <div id="event-panel"></div>
       </section>
 
-      <aside class="panel side-panel world-shell">
-        <div class="panel-title">关系与朝局</div>
-        <div id="world-panel"></div>
-      </aside>
-
       <section class="panel hand-panel">
         <div class="hand-head">
           <div>
+            <div id="hand-stage" class="hand-stage"></div>
             <div class="panel-title">处置选项</div>
             <div id="hand-hint" class="muted hand-hint"></div>
           </div>
@@ -56,11 +64,6 @@
           </div>
         </div>
         <div id="hand-panel"></div>
-      </section>
-
-      <section class="panel log-panel">
-        <div class="panel-title">近事</div>
-        <div id="log-panel"></div>
       </section>
     </main>
 

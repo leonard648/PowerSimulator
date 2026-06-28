@@ -231,11 +231,11 @@ h1 {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(230px, 0.75fr) minmax(520px, 1.75fr) minmax(260px, 0.85fr);
-  grid-template-rows: minmax(0, 0.86fr) minmax(480px, 1.14fr);
+  grid-template-columns: minmax(300px, 0.86fr) minmax(720px, 2.5fr);
+  grid-template-rows: minmax(180px, 0.84fr) minmax(330px, 1.16fr);
   grid-template-areas:
-    "character event world"
-    "log hand hand";
+    "sidebar event"
+    "sidebar hand";
   gap: 12px;
   align-items: stretch;
   flex: 1 1 auto;
@@ -271,12 +271,14 @@ h1 {
   min-width: 0;
 }
 
-.character-shell {
-  grid-area: character;
-}
-
-.world-shell {
-  grid-area: world;
+.main-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .event-panel {
@@ -295,11 +297,26 @@ h1 {
 }
 
 .log-panel {
-  grid-area: log;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+.main-sidebar > .panel {
+  min-height: 0;
+}
+
+.main-sidebar > .character-shell {
+  flex: 1.02 1 0;
+}
+
+.main-sidebar > .world-shell {
+  flex: 1.08 1 0;
+}
+
+.main-sidebar > .log-panel {
+  flex: 1.2 1 0;
 }
 
 .side-panel {
@@ -680,6 +697,11 @@ h1 {
   line-height: 1.68;
 }
 
+.event-desc b {
+  color: var(--red-deep);
+  margin-right: 4px;
+}
+
 .story-box {
   position: relative;
   margin-top: 12px;
@@ -726,7 +748,8 @@ h1 {
 }
 
 .story-box--dossier p {
-  max-width: 96ch;
+  max-width: none;
+  padding-right: 42px;
 }
 
 .story-box--outcome {
@@ -1072,6 +1095,23 @@ h1 {
   flex: 0 0 auto;
 }
 
+.hand-head > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hand-stage {
+  margin: 0 0 6px;
+}
+
+.hand-stage:empty {
+  display: none;
+}
+
+.hand-stage .choice-stage-head--compact {
+  max-width: min(760px, 100%);
+}
+
 .round-actions {
   display: flex;
   gap: 7px;
@@ -1354,11 +1394,15 @@ h1 {
 
 .hand-hint {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .hand-hint p {
   margin: 0;
+}
+
+.hand-hint-main {
+  display: block;
 }
 
 .choice-resource-strip {
@@ -2948,11 +2992,11 @@ body {
 }
 
 .layout {
-  grid-template-columns: minmax(260px, 0.92fr) minmax(520px, 1.95fr) minmax(280px, 0.9fr);
-  grid-template-rows: minmax(0, 0.86fr) minmax(480px, 1.14fr);
+  grid-template-columns: minmax(320px, 0.88fr) minmax(760px, 2.55fr);
+  grid-template-rows: minmax(180px, 0.84fr) minmax(330px, 1.16fr);
   grid-template-areas:
-    "character event world"
-    "log hand hand";
+    "sidebar event"
+    "sidebar hand";
   gap: 12px;
 }
 
@@ -3113,7 +3157,7 @@ body {
 }
 
 .world-list--compact {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .layout .stat {
@@ -3197,7 +3241,7 @@ body {
   overflow: hidden;
   line-height: 1.45;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
 }
 
 .layout .story-box {
@@ -3487,10 +3531,16 @@ body {
     grid-template-areas:
       "event"
       "hand"
-      "character"
-      "world"
-      "log";
+      "sidebar";
     overflow: visible;
+  }
+
+  .main-sidebar {
+    overflow: visible;
+  }
+
+  .main-sidebar > .panel {
+    flex: none;
   }
 
   .side-panel {
@@ -3585,6 +3635,16 @@ body {
   background: rgba(255, 252, 245, 0.72);
 }
 
+.choice-stage-head--compact {
+  grid-template-columns: auto minmax(92px, auto) minmax(220px, 1fr);
+  gap: 6px 10px;
+  align-items: baseline;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 9px;
+  background: rgba(255, 252, 245, 0.64);
+}
+
 .choice-stage-head span {
   color: var(--muted);
   font-size: 12px;
@@ -3592,6 +3652,18 @@ body {
 
 .choice-stage-head b {
   font-size: 18px;
+}
+
+.choice-stage-head--compact b {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.choice-stage-head--compact p {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .choice-stage-head p,
@@ -3748,6 +3820,22 @@ body {
   .hand-head,
   .event-title-row {
     display: block;
+  }
+
+  .hand-hint-main {
+    grid-template-columns: 1fr;
+  }
+
+  .choice-stage-head--compact {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .choice-stage-head--compact p {
+    grid-column: 1 / -1;
+  }
+
+  .story-box--dossier p {
+    padding-right: 0;
   }
 
   .event-meta {

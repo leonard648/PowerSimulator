@@ -132,11 +132,23 @@
     if (template && (!event.choiceStages || !event.choiceStages.length)) {
       event.choiceStages = deepClone(template.choiceStages || []);
     }
-    if (template && !event.story) {
+    if (template && template.desc) {
+      event.desc = template.desc;
+    }
+    if (template && (!event.story || event.story.version !== 2)) {
+      var detail = GameData.eventDetails && GameData.eventDetails[template.id] || {};
+      var critical = (template.criticalTracks || Object.keys(template.tracks || {}).slice(0, 2)).join("、");
+      var stakes = critical ? "此案真正咬人的地方，是" + critical + "。若只把表面压平，余波会在下一季换个名字回来。" : "此案已转入阶段处置：先查明底账，再定案表态。";
+      var opening = [detail.scene || template.desc, detail.background || template.desc].filter(Boolean).join("");
+      var turn = [detail.conflict || stakes, "旧存档已迁移为事务抉择流程，案卷仍按当前轨道继续推进。"].filter(Boolean).join("");
+      var close = detail.historicalWeight || stakes;
+      var paragraphs = [opening, turn, close]
+        .filter(function (line) { return line && String(line).trim(); });
       event.story = {
-        hook: template.desc,
-        stakes: "此案已转入阶段处置：先查明底账，再定案表态。",
-        paragraphs: [template.desc, "旧存档已迁移为事务抉择流程，案卷仍按当前轨道继续。"]
+        version: 2,
+        hook: detail.scene || template.desc,
+        stakes: stakes,
+        paragraphs: paragraphs.length ? paragraphs : [template.desc, "旧存档已迁移为事务抉择流程，案卷仍按当前轨道继续。"]
       };
     }
     event.choiceStageIndex = Math.max(0, event.choiceStageIndex || 0);
