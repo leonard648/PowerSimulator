@@ -17,6 +17,28 @@
     });
   }
 
+  function textParagraphs(value) {
+    if (Array.isArray(value)) {
+      return value.map(function (line) { return String(line || "").trim(); }).filter(Boolean);
+    }
+    return String(value || "").split(/\n+/).map(function (line) {
+      return line.trim();
+    }).filter(Boolean);
+  }
+
+  function renderParagraphs(value, className) {
+    var cls = className ? ' class="' + className + '"' : "";
+    return textParagraphs(value).map(function (line) {
+      return '<p' + cls + '>' + escapeHtml(line) + '</p>';
+    }).join("");
+  }
+
+  function storyParagraphs(story) {
+    story = story || {};
+    if (story.paragraphs && story.paragraphs.length) return story.paragraphs;
+    return [story.hook, story.stakes, story.privateNote, story.officeNote].filter(Boolean);
+  }
+
   var activeView = "main";
   var deckFilter = "全部";
   var selectedDeckId = null;
@@ -300,7 +322,7 @@
       summary.title || ""
     ].join("|");
     summaryModalFor = summaryKey;
-    var story = summary.story ? '<div class="story-box story-box--outcome"><b>余波</b><p>' + escapeHtml(summary.story) + '</p></div>' : "";
+    var story = summary.story ? '<div class="story-box story-box--outcome"><b>余波</b>' + renderParagraphs(summary.story) + '</div>' : "";
     var rewardHtml = renderRewardOptions(summary);
     var officeDraftHtml = renderOfficePackageDraft();
     var needsReward = summary.rewardOptions && summary.rewardOptions.length && !summary.rewardChosen;
@@ -465,7 +487,7 @@
   function renderEvent() {
     var event = Game.state.currentEvent;
     if (Game.state.ended) {
-      el("event-panel").innerHTML = '<h2 class="ending-title">' + escapeHtml(Game.state.ending.title) + '</h2><p class="ending-text">' + escapeHtml(Game.state.ending.text) + '</p><div class="modal-actions"><button id="ending-export">导出生平摘要</button></div>';
+      el("event-panel").innerHTML = '<h2 class="ending-title">' + escapeHtml(Game.state.ending.title) + '</h2><div class="ending-body">' + renderParagraphs(Game.state.ending.text, "ending-text") + '</div><div class="modal-actions"><button id="ending-export">导出生平摘要</button></div>';
       var exportButton = document.getElementById("ending-export");
       if (exportButton) exportButton.addEventListener("click", Game.UI.showExport);
       return;
@@ -508,11 +530,11 @@
     var specialBadge = event.special === "relation" ? '<span class="event-badge">关系事件</span>' : event.special === "npc" ? '<span class="event-badge event-badge--npc">人物事件</span>' : "";
     var relationMeta = event.special === "relation" ? '<br>触发：' + escapeHtml(event.relationSource || "关系阈值") : "";
     if (npcInfo) relationMeta = '<br>触发：' + escapeHtml(npcInfo.def.name + " · " + npcInfo.def.role);
-    var storyHtml = '<div class="story-box">' +
+    var storyLines = storyParagraphs(story);
+    if (!storyLines.length) storyLines = ["案卷压到灯下，尚未开封，局势已经有了重量。"];
+    var storyHtml = '<div class="story-box story-box--dossier">' +
       '<b>案前风声</b>' +
-      '<p>' + escapeHtml(story.hook || "案卷压到灯下，尚未开封，局势已经有了重量。") + '</p>' +
-      '<p>' + escapeHtml(story.stakes || "") + '</p>' +
-      (story.privateNote ? '<p class="muted">' + escapeHtml(story.privateNote) + '</p>' : "") +
+      renderParagraphs(storyLines) +
       '</div>';
     el("event-panel").innerHTML =
       '<div class="event-title-row"><h2>' + escapeHtml(event.name) + specialBadge + '</h2><div class="event-meta">关键阻力需压到 4 或以下<br>威胁满格触发反制' + relationMeta + '</div></div>' +
@@ -1109,6 +1131,7 @@
     var s = Game.state;
     var ending = currentEndingPreview();
     var office = Game.getOffice();
+    var lifeNarrative = Game.buildLifeNarrative ? Game.buildLifeNarrative() : textParagraphs(ending.text || "案卷仍在案头，身后评语尚未落笔。");
     var timeline = lifeTimeline().map(function (item) {
       return '<div class="timeline-item timeline-item--' + escapeHtml(item.kind || "career") + '"><b>' + escapeHtml(item.title) + '</b><span>' + escapeHtml(item.time) + '</span><p>' + escapeHtml(item.text) + '</p></div>';
     }).join("");
@@ -1128,13 +1151,13 @@
           '<h2>' + escapeHtml(s.ended ? ending.title : "一生纪略") + '</h2>' +
           '<p class="life-subtitle">' + escapeHtml(s.ended ? "身后评定" : "仕途未终，史笔未定") + '</p>' +
           '<div class="ink-landscape"></div>' +
-          '<p class="life-text">' + escapeHtml(ending.text || "案卷仍在案头，身后评语尚未落笔。") + '</p>' +
+          '<div class="life-text">' + renderParagraphs(lifeNarrative) + '</div>' +
           '<div class="section"><div class="panel-title">污点与牵连</div><div class="tags">' + (stains || '<span class="muted">暂无污点入档。</span>') + '</div></div>' +
         '</section>' +
         '<aside class="life-judgment">' +
           '<div class="panel-title">身后评定</div>' +
           renderJudgmentRows() +
-          '<div class="life-verdict"><b>史评</b><p>' + escapeHtml(s.ended ? ending.text : "功过仍在变化，清名、能名、权势与污点会共同决定身后评语。") + '</p></div>' +
+          '<div class="life-verdict"><b>史评</b>' + renderParagraphs(s.ended ? ending.text : "功过仍在变化，清名、能名、权势与污点会共同决定身后评语。") + '</div>' +
         '</aside>' +
         '<section class="life-timeline"><div class="panel-title">仕途时间线</div><div class="timeline-strip">' + timeline + '</div></section>' +
         '<div class="life-actions"><button data-life-action="export">导出生平</button><button data-life-action="new" class="ghost-button">再开一局</button><button data-life-action="deck" class="ghost-button">查看牌库</button></div>' +
@@ -1218,7 +1241,7 @@
     },
     showEnding: function () {
       var ending = Game.state.ending;
-      showModal('<h2 class="ending-title">' + escapeHtml(ending.title) + '</h2><p class="ending-text">' + escapeHtml(ending.text) + '</p><div class="modal-actions"><button id="export-button">导出生平摘要</button><button id="new-run-button" class="ghost-button">再开一局</button></div>');
+      showModal('<h2 class="ending-title">' + escapeHtml(ending.title) + '</h2><div class="ending-body">' + renderParagraphs(ending.text, "ending-text") + '</div><div class="modal-actions"><button id="export-button">导出生平摘要</button><button id="new-run-button" class="ghost-button">再开一局</button></div>');
       document.getElementById("export-button").addEventListener("click", Game.UI.showExport);
       document.getElementById("new-run-button").addEventListener("click", function () {
         hideModal();

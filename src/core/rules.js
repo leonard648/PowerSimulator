@@ -389,49 +389,98 @@
     return "案卷送到时封口尚新，火漆裂处露出一点旧尘。";
   }
 
+  function eventDetail(template) {
+    return (GameData.eventDetails || {})[template.id] || {};
+  }
+
+  function compactParagraphs(lines, limit) {
+    return lines.filter(function (line) {
+      return line && String(line).trim();
+    }).map(function (line) {
+      return String(line).trim();
+    }).slice(0, limit || 6);
+  }
+
+  function officeTensionLine(office, s) {
+    var yearText = "第" + s.year + "年" + (GameData.seasons[s.seasonIndex] || "");
+    return office.name + "任上" + yearText + "，" + office.goal + "已不只是考语，而是正在案前逼你表态的现实。";
+  }
+
+  function privatePressureLines(s) {
+    var lines = [styleMoodLine()];
+    if (s.resources.pressure >= 12) lines.push("连月压力已重，案卷尚未展开，身体却先记住了仕途的代价。");
+    if (s.stains.length) {
+      lines.push("旧日留下的" + s.stains.length + "处污点仍在牌库深处沉着，像有人替它们记着可以重见天日的时辰。");
+    }
+    var riskLine = highRelationRisk();
+    if (riskLine) lines.push(riskLine);
+    return lines;
+  }
+
   function makeEventStory(template) {
     var s = Game.state;
     var office = Game.getOffice();
     var critical = (template.criticalTracks || Object.keys(template.tracks).slice(0, 2)).join("、");
-    var pressureLine = s.resources.pressure >= 12 ? "你昨夜睡得很浅，醒来时仍觉得心口压着一枚冷印。" : "";
-    var stainLine = s.stains.length ? "旧日留下的" + s.stains.length + "处污点并未开口，却像有人替它们记着时辰。" : "";
-    var riskLine = highRelationRisk();
-    var privateNotes = [styleMoodLine(), pressureLine, stainLine, riskLine].filter(Boolean);
+    var detail = eventDetail(template);
+    var privateNotes = privatePressureLines(s);
     var npc = template.special === "npc" ? npcDefById(template.npcId) : npcForTemplate(template);
     if (npc && template.special === "npc") {
-      privateNotes.unshift(npc.name + "把话递到你案头。他要的不是一句官样文章，而是你在" + npc.agenda + "上表态。");
+      privateNotes.unshift(npc.name + "把话递到你案头。他要的不是一句官样文章，而是要你在“" + npc.agenda + "”这件事上留下立场。");
     } else if (npc) {
       privateNotes.unshift(npc.name + "的名字夹在这桩事里，未必出面，却足够改变旁人的眼色。");
     }
     var relationHook = template.special === "relation" ? "这不是寻常差事，而是" + template.relationSource + "积到临界后翻出的暗浪。" : "";
     var npcHook = npc && template.special === "npc" ? "这不是寻常公事，而是" + npc.name + "亲手递来的请托、试探或暗门。" : "";
+    var hook = npcHook || relationHook || participantStoryLine(template);
+    var stakes = "此案真正咬人的地方，是" + critical + "。若只把表面压平，余波会在下一季换个名字回来。";
+    var paragraphs = compactParagraphs([
+      detail.background || template.desc,
+      detail.scene || hook,
+      detail.conflict || stakes,
+      officeTensionLine(office, s),
+      privateNotes.join(" "),
+      detail.historicalWeight
+    ], 6);
     return {
-      hook: npcHook || relationHook || participantStoryLine(template),
-      stakes: "此案真正咬人的地方，是" + critical + "。若只把表面压平，余波会在下一季换个名字回来。",
+      hook: hook,
+      stakes: stakes,
       privateNote: privateNotes.slice(0, 2).join(" "),
-      officeNote: office.name + "任上第" + s.year + "年，" + office.goal + "已经不再只是考语。"
+      officeNote: officeTensionLine(office, s),
+      paragraphs: paragraphs
     };
   }
 
   function makeOutcomeStory(event, result, consequences) {
     var played = event.played.length ? "你动用过" + event.played.slice(0, 3).join("、") + "。" : "你几乎没有真正出手。";
     var unresolved = result.unresolved.length ? "未平的" + result.unresolved.slice(0, 2).join("、") + "被人悄悄记进旁账。" : "案后诸人各自退开，暂时无人敢把话说满。";
+    var resultLine;
     if (result.success) {
-      return pickLine([
+      resultLine = pickLine([
         "史笔若写到此处，大概会说你能在刀背上落墨，" + played + unresolved,
         "结案那天，堂上风声忽然轻了些，" + played + "这不是胜利的锣声，只是下一局前难得的静。"
       ]);
-    }
-    if (result.partial) {
-      return pickLine([
+    } else if (result.partial) {
+      resultLine = pickLine([
         "此事算是过关，却不是干净收场。" + played + unresolved,
         "你把最坏的结果压住了，但纸面下仍有湿痕。" + played + unresolved
       ]);
+    } else {
+      resultLine = pickLine([
+        "这一败没有立刻把你掀倒，却让后来每一次开卷都多一层阴影。" + played + unresolved,
+        "案子散去时，最先留下的不是罪名，而是旁人确认你也会失手。" + played + (consequences.length ? " " + consequences[0] : "")
+      ]);
     }
-    return pickLine([
-      "这一败没有立刻把你掀倒，却让后来每一次开卷都多一层阴影。" + played + unresolved,
-      "案子散去时，最先留下的不是罪名，而是旁人确认你也会失手。" + played + (consequences.length ? " " + consequences[0] : "")
-    ]);
+    var consequenceLine = consequences.length ? "后患没有随结案散去：" + consequences.join(" ") : "至少在这一季，案后的杂音尚未汇成新的公文。";
+    var relationLine = "";
+    if (event.special === "relation") {
+      relationLine = "此事本由“" + (event.relationSource || "关系阈值") + "”引发，结局会反过来改写旁人对你的亲近、猜忌或怨恨。";
+    } else if (event.special === "npc" && event.npcId) {
+      var def = npcDefById(event.npcId);
+      if (def) relationLine = def.name + "因此更深地写入你的仕途。此人不是一段插曲，而会在往后的案卷里继续索取、偿还或记恨。";
+    } else {
+      relationLine = "这类公事看似一季一结，实际会把名声、钱粮、人情和朝局压力一点点推向新的形状。";
+    }
+    return compactParagraphs([resultLine, consequenceLine, relationLine], 4).join("\n");
   }
 
   function npcOutcomeLine(event, result) {
@@ -1908,20 +1957,132 @@
     Game.addLog("仕途终局：" + ending.title);
   };
 
+  function splitParagraphText(text) {
+    return String(text || "").split(/\n+/).map(function (line) {
+      return line.trim();
+    }).filter(Boolean);
+  }
+
+  function currentEndingForState(s) {
+    if (s.ending) return s.ending;
+    var ending = (GameData.endings || []).find(function (item) {
+      try {
+        return item.when(s);
+      } catch (err) {
+        return false;
+      }
+    });
+    return ending || { title: "仕途未终", text: "案卷仍在案头，身后评语尚未落笔。" };
+  }
+
+  function strongestFameMetric(s) {
+    return [
+      ["清名", s.fame.clean, "名节自持，遇利多能止步"],
+      ["能名", s.fame.competence, "长于案牍钱粮，能把乱局拆成可办之事"],
+      ["文名", s.fame.literary, "以文字、经义和奏疏见称"],
+      ["权名", s.fame.power, "善用门路、密折和朝中暗线"],
+      ["酷名", s.fame.cruel, "手段峻急，能慑人也易伤人"],
+      ["贪名", s.fame.corruption, "灰色交易留痕，清议难为其洗净"]
+    ].sort(function (a, b) { return b[1] - a[1]; })[0];
+  }
+
+  function npcTone(state) {
+    if ((state.resentment || 0) >= 6) return "结怨";
+    if ((state.debt || 0) >= 5) return "牵连";
+    if ((state.bond || 0) >= 5 || (state.trust || 0) >= 5) return "相助";
+    return "相识";
+  }
+
+  function npcHighlights(limit) {
+    return (GameData.npcs || []).map(function (def) {
+      var state = npcState(def.id);
+      var heat = Math.max(state.bond || 0, state.trust || 0, state.debt || 0, state.resentment || 0);
+      return { def: def, state: state, heat: heat };
+    }).filter(function (item) {
+      return item.state.met || item.heat >= 4;
+    }).sort(function (a, b) {
+      return b.heat - a.heat;
+    }).slice(0, limit || 5);
+  }
+
+  function buildCareerNarrative(s) {
+    var office = Game.getOffice();
+    var history = s.career && s.career.history || [];
+    if (!history.length) {
+      return "其人二十四岁入仕，现仍居" + (office.rankName || office.name) + "，官评" + ((s.career && s.career.merit) || 0) + "。履历尚未大转，真正能够定其一生轻重的案卷仍在前方。";
+    }
+    var entries = history.slice(-4).map(function (entry) {
+      return entry.time + "，" + entry.text;
+    }).join("；");
+    return "履历可考者，近事有：" + entries + "。这些升迁、降调或骤断之笔，使他的仕途不再只是年表，而成了一串能互相解释的因果。";
+  }
+
+  function buildFameNarrative(s) {
+    var fame = strongestFameMetric(s);
+    var stainText = s.stains.length ? "污点入档" + s.stains.length + "处，较重者为" + s.stains.slice(-3).map(cardName).join("、") + "。" : "暂未有污点足以单独成案。";
+    return "综其政声，最显者为" + fame[0] + "（" + fame[1] + "）：可谓" + fame[2] + "。清名" + s.fame.clean + "、能名" + s.fame.competence + "、文名" + s.fame.literary + "、权名" + s.fame.power + "、酷名" + s.fame.cruel + "、贪名" + s.fame.corruption + "并列案后，" + stainText;
+  }
+
+  function buildPeopleNarrative() {
+    var people = npcHighlights(4);
+    if (!people.length) return "其仕途尚未与具名人物结成深线，所遇多为泛泛官场人情；这使他暂少牵连，也少了可被后人反复书写的私交。";
+    return "人物牵连中，" + people.map(function (item) {
+      var state = item.state;
+      var latest = state.history && state.history.length ? "，近事为" + state.history[state.history.length - 1].text : "";
+      return item.def.name + "（" + item.def.role + "，" + npcTone(state) + latest + "）";
+    }).join("；") + "。这些人有的递来台阶，有的藏着旧账，共同把传主从单纯官员写成有亲疏恩怨的人。";
+  }
+
+  function buildCaseNarrative(s) {
+    var beats = (s.storyBeats || []).slice(0, 5).reverse();
+    if (!beats.length) return "案卷纪年尚浅，只有几条寻常记事可供后来史笔取舍。";
+    return "案卷纪年中较可入传者，有" + beats.map(function (beat) {
+      var text = splitParagraphText(beat.text)[0] || "";
+      return beat.time + "《" + beat.title + "》：" + text;
+    }).join("；") + "。这些事件未必件件显赫，却能看出其人每一季如何被名声、压力与人情推着前行。";
+  }
+
+  Game.buildLifeNarrative = function () {
+    var s = Game.state;
+    var ending = currentEndingForState(s);
+    var office = Game.getOffice();
+    var style = dominantStyle();
+    var paragraphs = [
+      s.ended ? "终局既定，史笔以《" + ending.title + "》为题收束其一生。回看十二年仕途，他最后停在" + (office.rankName || office.name) + "，年" + s.age + "，官评" + ((s.career && s.career.merit) || 0) + "。" : "仕途未终，史笔尚未定稿。此时他居" + (office.rankName || office.name) + "，年" + s.age + "，官评" + ((s.career && s.career.merit) || 0) + "，为官方法暂以“" + style.tag + "”最显。",
+      buildFameNarrative(s),
+      buildCareerNarrative(s),
+      buildPeopleNarrative(),
+      buildCaseNarrative(s)
+    ];
+    if (s.ended) {
+      paragraphs = paragraphs.concat(splitParagraphText(ending.text));
+    } else {
+      var projected = splitParagraphText(ending.text)[0];
+      if (projected) paragraphs.push("若以此时功过预断，史笔或暂向《" + ending.title + "》倾斜：" + projected);
+    }
+    return compactParagraphs(paragraphs, 10);
+  };
+
   Game.exportBiography = function () {
     var s = Game.state;
     var lines = [];
-    lines.push("《官场卡牌构筑 Demo 生平摘要》");
+    var ending = currentEndingForState(s);
+    lines.push("《官场卡牌构筑 Demo 生平传》");
     lines.push("");
-    lines.push("结局：" + (s.ending ? s.ending.title : "未完"));
-    if (s.ending) lines.push(s.ending.text);
+    lines.push("【传主总评】");
+    Game.buildLifeNarrative().forEach(function (paragraph) {
+      lines.push(paragraph);
+      lines.push("");
+    });
+    lines.push("结局：" + (s.ended ? ending.title : "未完，暂拟" + ending.title));
     lines.push("");
+    lines.push("【政声与局势】");
     lines.push("名声：清名" + s.fame.clean + "，能名" + s.fame.competence + "，文名" + s.fame.literary + "，权名" + s.fame.power + "，酷名" + s.fame.cruel + "，贪名" + s.fame.corruption);
-    lines.push("朝局：皇帝信任" + s.world.emperorTrust + "，士林评价" + s.world.scholarOpinion + "，民心" + s.world.publicMood + "，财政健康" + s.world.fiscalHealth);
+    lines.push("朝局：皇帝信任" + s.world.emperorTrust + "，士林评价" + s.world.scholarOpinion + "，民心" + s.world.publicMood + "，财政健康" + s.world.fiscalHealth + "，朋党烈度" + s.world.factionHeat + "，朝局压力" + s.world.courtPressure);
     lines.push("仕途：现任" + Game.getOffice().name + "（" + (s.career ? s.career.rankName : Game.getOffice().rankName) + "），官评" + (s.career ? s.career.merit : 0));
-    lines.push("污点：" + (s.stains.length ? s.stains.map(function (id) { return Game.cardById(id).name; }).join("、") : "无"));
+    lines.push("污点：" + (s.stains.length ? s.stains.map(cardName).join("、") : "无"));
     lines.push("");
-    lines.push("仕途履历：");
+    lines.push("【仕途履历】");
     if (s.career && s.career.history && s.career.history.length) {
       s.career.history.forEach(function (entry) {
         lines.push("- " + entry.time + "：" + entry.text);
@@ -1930,36 +2091,34 @@
       lines.push("- 尚无升迁或清算记录。");
     }
     lines.push("");
-    lines.push("人物评语：");
-    var npcHighlights = (GameData.npcs || []).map(function (def) {
-      var state = npcState(def.id);
-      var heat = Math.max(state.bond || 0, state.trust || 0, state.debt || 0, state.resentment || 0);
-      return { def: def, state: state, heat: heat };
-    }).filter(function (item) {
-      return item.state.met || item.heat >= 4;
-    }).sort(function (a, b) {
-      return b.heat - a.heat;
-    }).slice(0, 5);
-    if (npcHighlights.length) {
-      npcHighlights.forEach(function (item) {
+    lines.push("【人物牵连】");
+    var highlights = npcHighlights(6);
+    if (highlights.length) {
+      highlights.forEach(function (item) {
         var state = item.state;
-        var tone = state.resentment >= 6 ? "结怨" : state.debt >= 5 ? "牵连" : state.bond >= 5 || state.trust >= 5 ? "相助" : "相识";
         var latest = state.history && state.history.length ? "；近事：" + state.history[state.history.length - 1].text : "";
-        lines.push("- " + item.def.name + "（" + item.def.role + "，" + tone + "）：羁绊" + state.bond + "，信任" + state.trust + "，亏欠" + state.debt + "，怨恨" + state.resentment + latest);
+        lines.push("- " + item.def.name + "（" + item.def.role + "，" + npcTone(state) + "）：羁绊" + state.bond + "，信任" + state.trust + "，亏欠" + state.debt + "，怨恨" + state.resentment + latest);
       });
     } else {
       lines.push("- 尚无足以入传的人物牵连。");
     }
     lines.push("");
-    lines.push("史传摘句：");
+    lines.push("【案卷纪年】");
     (s.storyBeats || []).slice(0, 12).reverse().forEach(function (beat) {
-      lines.push("- " + beat.time + "《" + beat.title + "》：" + beat.text);
+      lines.push("- " + beat.time + "《" + beat.title + "》：" + splitParagraphText(beat.text).join(" / "));
     });
     lines.push("");
-    lines.push("生平记事：");
+    lines.push("【生平记事】");
     s.log.slice().reverse().forEach(function (entry) {
       lines.push("- " + entry.time + "：" + entry.text);
     });
+    if (s.ended) {
+      lines.push("");
+      lines.push("【身后评语】");
+      splitParagraphText(ending.text).forEach(function (paragraph) {
+        lines.push(paragraph);
+      });
+    }
     return lines.join("\n");
   };
 })();

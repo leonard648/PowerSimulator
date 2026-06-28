@@ -721,6 +721,14 @@ h1 {
   line-height: 1.7;
 }
 
+.story-box p + p {
+  margin-top: 9px;
+}
+
+.story-box--dossier p {
+  max-width: 96ch;
+}
+
 .story-box--outcome {
   border-left-color: var(--gold);
 }
@@ -1725,9 +1733,16 @@ h1 {
   margin-bottom: 10px;
 }
 
+.ending-body {
+  display: grid;
+  gap: 10px;
+  max-width: 78ch;
+}
+
 .ending-text {
   line-height: 1.8;
   font-size: 16px;
+  margin: 0;
 }
 
 .modal-actions {
@@ -1892,6 +1907,11 @@ textarea.export {
   gap: 10px;
   margin: 10px 0 12px;
   line-height: 1.75;
+}
+
+.npc-biography p {
+  margin: 0;
+  max-width: 86ch;
 }
 
 .npc-story-meters {
@@ -2589,10 +2609,16 @@ textarea.export {
 }
 
 .life-text {
+  display: grid;
+  gap: 10px;
   max-width: 62ch;
   margin: 0 auto;
   line-height: 1.85;
   text-align: left;
+}
+
+.life-text p {
+  margin: 0;
 }
 
 .life-judgment {
@@ -2629,7 +2655,17 @@ textarea.export {
 }
 
 .life-verdict b {
+  display: block;
+  margin-bottom: 6px;
   color: var(--red-deep);
+}
+
+.life-verdict p {
+  margin: 0 0 8px;
+}
+
+.life-verdict p:last-child {
+  margin-bottom: 0;
 }
 
 .life-timeline {
@@ -3042,6 +3078,13 @@ body {
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.layout .story-box--dossier p {
+  display: block;
+  overflow: visible;
+  line-height: 1.58;
+  -webkit-line-clamp: unset;
 }
 
 .layout .threat-meter,
