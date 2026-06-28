@@ -330,10 +330,10 @@
       '<div class="event-title-row"><h2>' + escapeHtml(event.name) + specialBadge + '</h2><div class="event-meta">关键阻力需压到 4 或以下<br>威胁满格触发反制' + relationMeta + '</div></div>' +
       '<p class="event-desc">' + escapeHtml(event.desc) + '</p>' +
       '<div class="tags">' + participantHtml + '</div>' +
-      storyHtml +
       threatHtml +
       '<div class="section tracks">' + trackHtml + '</div>' +
       previewHtml +
+      storyHtml +
       played;
   }
 
@@ -432,7 +432,16 @@
       statBlock("朋党烈度", s.world.factionHeat, 20, true),
       statBlock("朝局压力", s.world.courtPressure, 20, true)
     ].join("");
-    var relations = GameData.people.map(function (person) {
+    function relationPriority(person) {
+      var rel = s.relations[person.id] || {};
+      var badges = Game.getRelationBadges ? Game.getRelationBadges(person.id) : [];
+      return Math.max(rel.suspicion || 0, rel.resentment || 0, rel.debt || 0, rel.fear || 0) +
+        Math.max(0, 8 - (rel.trust || 0)) +
+        badges.length * 3;
+    }
+    var relations = GameData.people.slice().sort(function (a, b) {
+      return relationPriority(b) - relationPriority(a);
+    }).slice(0, 2).map(function (person) {
       var rel = s.relations[person.id] || {};
       var bits = person.keys.map(function (key) {
         var name = { trust: "信任", suspicion: "猜忌", closeness: "亲近", debt: "亏欠", resentment: "怨恨", fear: "畏惧" }[key] || key;
@@ -444,7 +453,14 @@
       }).join("");
       return '<div class="relation"><div class="relation-head"><b>' + escapeHtml(person.name) + '</b><span class="muted">' + escapeHtml(person.label) + '</span></div>' + (badgeHtml ? '<div class="relation-badges">' + badgeHtml + '</div>' : '') + '<div>' + escapeHtml(bits) + '</div></div>';
     }).join("");
-    var npcHtml = (Game.getVisibleNpcs ? Game.getVisibleNpcs() : []).map(function (item) {
+    var visibleNpcs = Game.getVisibleNpcs ? Game.getVisibleNpcs() : [];
+    var npcHtml = visibleNpcs.slice().sort(function (a, b) {
+      function score(item) {
+        var state = item.state || {};
+        return (item.inOffice ? 4 : 0) + (state.resentment || 0) + (state.debt || 0) + (state.trust || 0) + (state.bond || 0);
+      }
+      return score(b) - score(a);
+    }).slice(0, 1).map(function (item) {
       var def = item.def;
       var state = item.state;
       var badges = [];
@@ -468,18 +484,26 @@
         '<div class="npc-traits">' + traits + '</div>' +
       '</div>';
     }).join("");
-    var contacts = s.contacts.map(function (id) {
-      return GameData.contacts.find(function (contact) { return contact.id === id; });
-    }).filter(Boolean).map(function (contact) {
-      return '<div class="world-item"><b>' + escapeHtml(contact.name) + '</b><span class="muted">' + escapeHtml(contact.desc) + '</span></div>';
-    }).join("");
-
+    var npcSection = npcHtml ? '<div class="section"><div class="panel-title">入局人物</div><div class="npc-list npc-list--compact">' + npcHtml + '</div></div>' : "";
     el("world-panel").innerHTML =
-      '<div class="world-list">' + worldHtml + '</div>' +
-      '<div class="section"><div class="panel-title">关系</div><div class="relation-list">' + relations + '</div></div>' +
-      '<div class="section"><div class="panel-title">人物志</div><div class="npc-list">' + (npcHtml || '<p class="muted">暂无登场人物。</p>') + '</div></div>' +
-      '<div class="section"><div class="panel-title">人脉</div><div class="world-list">' + contacts + '</div></div>';
+      '<div class="world-list world-list--compact">' + worldHtml + '</div>' +
+      '<div class="section"><div class="panel-title">紧要关系</div><div class="relation-list relation-list--compact">' + relations + '</div></div>' +
+      npcSection +
+      '<div class="panel-actions"><button data-main-nav="relations" class="ghost-button">朝局详情</button></div>';
+    bindMainNavButtons();
     bindNpcStoryButtons();
+  }
+
+  function bindMainNavButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-main-nav]"), function (button) {
+      if (button.dataset.mainNavBound === "1") return;
+      button.dataset.mainNavBound = "1";
+      button.addEventListener("click", function () {
+        var view = button.getAttribute("data-main-nav");
+        Game.UI.setView(view);
+        window.location.hash = view === "main" ? "" : view;
+      });
+    });
   }
 
   function npcStoryModal(id) {
@@ -527,16 +551,17 @@
   }
 
   function renderLog() {
-    var beats = (Game.state.storyBeats || []).slice(0, 4).map(function (beat) {
+    var beats = (Game.state.storyBeats || []).slice(0, 2).map(function (beat) {
       return '<div class="story-entry story-entry--' + escapeHtml(beat.kind) + '"><b>' + escapeHtml(beat.title) + '</b><span>' + escapeHtml(beat.time) + '</span><p>' + escapeHtml(beat.text) + '</p></div>';
     }).join("");
-    var html = Game.state.log.map(function (entry) {
+    var html = Game.state.log.slice(0, 3).map(function (entry) {
       return '<div class="log-entry"><b>' + escapeHtml(entry.time) + '</b><br>' + escapeHtml(entry.text) + '</div>';
     }).join("");
     el("log-panel").innerHTML =
       '<div class="panel-title">传闻与余波</div>' +
-      '<div class="story-feed">' + (beats || '<p class="muted">尚无传闻。</p>') + '</div>' +
-      '<div class="section"><div class="panel-title">记事</div><div class="log-list">' + (html || '<p class="muted">尚无记事。</p>') + '</div></div>';
+      '<div class="log-compact-list">' + (beats || "") + (html || '<p class="muted">尚无记事。</p>') + '</div>' +
+      '<div class="panel-actions"><button data-main-nav="life" class="ghost-button">生平卷</button></div>';
+    bindMainNavButtons();
   }
 
   function setActiveView(view) {

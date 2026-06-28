@@ -70,8 +70,13 @@ button:disabled {
 
 .app {
   width: min(1460px, calc(100vw - 28px));
+  height: 100vh;
   margin: 0 auto;
   padding: 14px 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
 }
 
 .topbar {
@@ -82,8 +87,9 @@ button:disabled {
     "time time time";
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   color: #fff6df;
+  flex: 0 0 auto;
 }
 
 .topbar > *,
@@ -225,13 +231,20 @@ h1 {
 
 .layout {
   display: grid;
-  grid-template-columns: 280px minmax(620px, 1fr) 320px;
+  grid-template-columns: minmax(230px, 0.75fr) minmax(520px, 1.75fr) minmax(260px, 0.85fr);
+  grid-template-rows: minmax(0, 1fr) minmax(312px, 0.72fr);
   grid-template-areas:
     "character event world"
-    "hand hand hand"
-    "log log log";
+    "log hand hand";
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-view {
+  min-height: 0;
 }
 
 .app-view.hidden {
@@ -268,22 +281,29 @@ h1 {
 
 .event-panel {
   grid-area: event;
-  max-height: min(650px, calc(100vh - 178px));
-  min-height: 430px;
+  min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
 }
 
 .hand-panel {
   grid-area: hand;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .log-panel {
   grid-area: log;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .side-panel {
-  max-height: min(650px, calc(100vh - 178px));
+  min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
 }
@@ -916,8 +936,9 @@ h1 {
 .hand-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 10px;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .round-actions {
@@ -925,6 +946,13 @@ h1 {
   gap: 7px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+#hand-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .cards {
@@ -941,7 +969,10 @@ h1 {
 }
 
 .hand-panel .cards {
-  padding-bottom: 14px;
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 0;
+  padding-bottom: 10px;
 }
 
 .exchange-bar {
@@ -949,9 +980,9 @@ h1 {
   align-items: center;
   flex-wrap: nowrap;
   gap: 7px;
-  margin-top: 10px;
-  padding: 8px;
-  min-height: 42px;
+  margin-top: 7px;
+  padding: 6px 8px;
+  min-height: 36px;
   overflow-x: auto;
   scrollbar-width: thin;
   border: 1px solid rgba(132, 94, 49, 0.35);
@@ -1386,38 +1417,45 @@ h1 {
 }
 
 #log-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 12px;
-  align-items: start;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
 
 #log-panel > .panel-title {
-  margin-bottom: 0;
-}
-
-#log-panel > .story-feed {
-  grid-column: 1;
-}
-
-#log-panel > .section {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  margin-top: 0;
+  margin-bottom: 8px;
 }
 
 .log-list {
-  max-height: 210px;
+  max-height: none;
   overflow: auto;
   padding-right: 4px;
   scrollbar-width: thin;
 }
 
 .story-feed {
-  max-height: 210px;
+  max-height: none;
   overflow: auto;
   padding-right: 4px;
   scrollbar-width: thin;
+}
+
+.log-compact-list {
+  display: grid;
+  gap: 7px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  flex: 0 0 auto;
 }
 
 .story-entry {
@@ -2414,13 +2452,14 @@ body {
 
 .app {
   width: min(1672px, calc(100vw - 20px));
-  padding-top: 10px;
+  padding: 10px 0;
+  gap: 10px;
 }
 
 .topbar {
   position: relative;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   padding: 10px 14px 9px;
   border: 1px solid rgba(205, 164, 89, 0.45);
   border-radius: 3px;
@@ -2476,7 +2515,11 @@ body {
 
 .layout {
   grid-template-columns: minmax(260px, 0.92fr) minmax(520px, 1.95fr) minmax(280px, 0.9fr);
-  gap: 16px;
+  grid-template-rows: minmax(0, 1fr) minmax(312px, 0.72fr);
+  grid-template-areas:
+    "character event world"
+    "log hand hand";
+  gap: 12px;
 }
 
 .panel {
@@ -2495,17 +2538,17 @@ body {
   border: 1px solid rgba(126, 91, 49, 0.64);
   border-image-source: none;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background:
     linear-gradient(180deg, rgba(255, 248, 229, 0.9), rgba(225, 202, 160, 0.84));
 }
 
 .event-panel {
-  min-height: 500px;
+  min-height: 0;
   border: 1px solid rgba(126, 91, 49, 0.64);
   border-image-source: none;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background:
     linear-gradient(180deg, rgba(255, 248, 229, 0.94), rgba(225, 202, 160, 0.84));
 }
@@ -2514,7 +2557,7 @@ body {
   border: 1px solid rgba(126, 91, 49, 0.64);
   border-image-source: none;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background:
     linear-gradient(180deg, rgba(255, 248, 229, 0.9), rgba(225, 202, 160, 0.84));
 }
@@ -2523,7 +2566,7 @@ body {
   border: 1px solid rgba(126, 91, 49, 0.64);
   border-image-source: none;
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   background:
     linear-gradient(180deg, rgba(255, 248, 229, 0.9), rgba(183, 147, 91, 0.58));
 }
@@ -2533,10 +2576,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 128px;
-  min-height: 34px;
-  margin-bottom: 10px;
-  padding: 2px 22px 5px;
+  min-width: 112px;
+  min-height: 30px;
+  margin-bottom: 8px;
+  padding: 2px 18px 4px;
   border: 1px solid rgba(137, 85, 43, 0.54);
   border-radius: 6px;
   color: #f4d797;
@@ -2577,24 +2620,24 @@ body {
 }
 
 .hand-panel > .hand-head .panel-title {
-  min-width: 150px;
+  min-width: 132px;
 }
 
 .event-panel > .panel-title {
   display: flex;
   width: max-content;
-  margin: -6px auto 12px;
+  margin: -4px auto 8px;
 }
 
 .character-identity {
   display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 9px;
   border: 1px solid rgba(112, 76, 38, 0.38);
   border-radius: 6px;
-  padding: 8px;
+  padding: 7px;
   background: rgba(34, 38, 32, 0.78);
   color: #e9d7aa;
   box-shadow: inset 0 0 0 2px rgba(232, 201, 135, 0.08);
@@ -2607,21 +2650,254 @@ body {
 
 .character-identity b {
   color: #fff1c7;
-  font-size: 19px;
-  margin-bottom: 6px;
+  font-size: 17px;
+  margin-bottom: 4px;
 }
 
 .character-identity span {
   color: rgba(255, 241, 199, 0.76);
-  line-height: 1.55;
+  line-height: 1.35;
+  font-size: 12px;
 }
 
 .character-portrait-slice {
-  width: 112px;
+  width: 86px;
   aspect-ratio: 153 / 225;
   border: 1px solid rgba(216, 181, 110, 0.45);
   background: var(--slice-portrait-official) center / cover no-repeat;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.layout .section {
+  margin-top: 8px;
+}
+
+.layout .stat-grid,
+.layout .resource-grid,
+.world-list--compact {
+  gap: 6px;
+}
+
+.world-list--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.layout .stat {
+  min-height: 42px;
+  padding: 6px;
+}
+
+.world-list--compact .stat {
+  min-height: 36px;
+  padding: 5px 6px;
+}
+
+.layout .stat b,
+.layout .relation b,
+.layout .world-item b {
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+.layout .bar {
+  height: 6px;
+}
+
+.layout .tag,
+.layout .relation-badge,
+.layout .npc-badge {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.layout .style-ribbon {
+  margin-top: 8px;
+  padding: 6px 8px;
+}
+
+.world-shell #world-panel,
+.log-panel #log-panel {
+  min-height: 0;
+}
+
+.world-shell .panel-actions {
+  position: sticky;
+  bottom: -1px;
+  margin: 8px -2px -2px;
+  padding-top: 6px;
+  background:
+    linear-gradient(180deg, rgba(225, 202, 160, 0), rgba(225, 202, 160, 0.96) 42%, rgba(225, 202, 160, 0.96));
+}
+
+.relation-list--compact,
+.npc-list--compact {
+  gap: 6px;
+}
+
+.relation-list--compact .relation,
+.npc-list--compact .npc-card,
+.log-compact-list .story-entry,
+.log-compact-list .log-entry {
+  padding: 6px;
+}
+
+.npc-list--compact .npc-agenda,
+.log-compact-list p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.npc-list--compact .npc-traits {
+  display: none;
+}
+
+.layout .event-title-row h2 {
+  font-size: 22px;
+}
+
+.layout .event-desc {
+  display: -webkit-box;
+  margin: 6px 0;
+  overflow: hidden;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.layout .story-box {
+  margin-top: 8px;
+  padding: 9px 11px 9px 12px;
+}
+
+.layout .story-box p {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.layout .threat-meter,
+.layout .preview-box {
+  margin-top: 8px;
+  padding: 8px;
+}
+
+.layout .tracks {
+  gap: 7px;
+}
+
+.layout .track {
+  padding: 7px;
+}
+
+.layout .track-head {
+  margin-bottom: 6px;
+}
+
+.layout .hand-head .muted {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.layout .cost-legend {
+  gap: 6px;
+}
+
+.layout .hand-panel .cards {
+  gap: 10px;
+  margin-top: 8px;
+  padding-bottom: 8px;
+}
+
+.layout .hand-panel .card {
+  grid-template-rows: auto 28px minmax(24px, 1fr) auto auto;
+  flex: 0 0 188px;
+  gap: 3px;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding: 7px;
+}
+
+.layout .hand-panel .card h3 {
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.layout .hand-panel .card-type {
+  margin-bottom: 1px;
+  font-size: 11px;
+}
+
+.layout .hand-panel .card-costs {
+  max-width: 58px;
+}
+
+.layout .hand-panel .cost-chip {
+  min-width: 25px;
+  height: 20px;
+  padding: 0 4px;
+  font-size: 11px;
+}
+
+.layout .hand-panel .card-art {
+  min-height: 28px;
+}
+
+.layout .hand-panel .card-art-symbol {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+}
+
+.layout .hand-panel .card-art-stamp {
+  right: 10px;
+  bottom: 5px;
+  width: 16px;
+  height: 16px;
+}
+
+.layout .hand-panel .card-desc {
+  min-height: 24px;
+  font-size: 12px;
+  line-height: 1.28;
+  -webkit-line-clamp: 2;
+}
+
+.layout .hand-panel .card-hints {
+  gap: 3px;
+  min-height: 0;
+}
+
+.layout .hand-panel .card-hints span {
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+.layout .hand-panel .card-footer {
+  display: none;
+}
+
+.layout .hand-panel .card .tag {
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+.layout .hand-panel .card-actions {
+  gap: 4px;
+}
+
+.layout .hand-panel .card-actions button {
+  min-height: 26px;
+  padding: 0 4px;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat,
@@ -2694,12 +2970,21 @@ body {
 }
 
 @media (max-width: 1120px) {
+  .app {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding-bottom: 22px;
+  }
+
   .topbar {
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "brand actions"
       "tabs tabs"
       "time time";
+    margin-bottom: 10px;
   }
 
   .view-tabs {
@@ -2708,12 +2993,14 @@ body {
 
   .layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
     grid-template-areas:
       "event"
       "hand"
       "character"
       "world"
       "log";
+    overflow: visible;
   }
 
   .side-panel {
@@ -2725,6 +3012,23 @@ body {
   .event-panel {
     max-height: none;
     overflow: visible;
+  }
+
+  .hand-panel,
+  .log-panel {
+    display: block;
+    overflow: visible;
+  }
+
+  #hand-panel,
+  #log-panel {
+    display: block;
+  }
+
+  .layout .hand-panel .card {
+    height: auto;
+    max-height: none;
+    min-height: 318px;
   }
 
   .relation-screen,
@@ -2776,18 +3080,9 @@ body {
     grid-template-columns: 1fr;
   }
 
-  #log-panel {
-    grid-template-columns: 1fr;
-  }
-
-  #log-panel > .story-feed,
-  #log-panel > .section {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  #log-panel > .section {
-    margin-top: 8px;
+  .log-compact-list {
+    max-height: none;
+    overflow: visible;
   }
 }
 
